@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login e Carica RaceResult</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="loginForm">
+    <label>Username: <input type="text" name="username" required /></label><br />
+    <label>Password: <input type="password" name="password" required /></label><br />
+    <button type="submit">Login</button>
+  </form>
+
+  <h2>Carica dati RaceResult</h2>
+  <form id="raceResultForm" style="display:none;">
+    <label>Track Name: <input type="text" name="track_name" required /></label><br />
+    <label>Mission Name: <input type="text" name="mission_name" required /></label><br />
+    <label>Number of Laps Completed: <input type="number" name="number_of_laps_completed" required /></label><br />
+    <label>Number of Evaluated Cones Yellow: <input type="number" name="number_of_evaluated_cones_yellow" required /></label><br />
+    <label>Number of Evaluated Cones Blue: <input type="number" name="number_of_evaluated_cones_blue" required /></label><br />
+    <label>Is Successful: 
+      <select name="is_successful" required>
+        <option value="true">True</option>
+        <option value="false">False</option>
+      </select>
+    </label><br />
+    <label>Rosbag File:
+    <input type="file" name="rosbag_file" />
+    </label><br />
+    <label>Avg Lap Time: <input type="number" step="0.01" name="avg_lap_time" required /></label><br />
+    <label>Timestamp: <input type="datetime-local" name="timestamp" /></label><br />
+    <button type="submit">Invia RaceResult</button>
+  </form>
+  <button type="show_list">show</button>
+  <pre id="response"></pre>
+
+  <script>
+    let authToken = null;
+    const loginForm = document.getElementById('loginForm');
+    const raceResultForm = document.getElementById('raceResultForm');
+    const responsePre = document.getElementById('response');
+
+    // Gestione login
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      responsePre.textContent = 'Login in corso...';
+
+      const data = {
+        username: loginForm.username.value,
+        password: loginForm.password.value
+      };
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api-token-auth/', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          responsePre.textContent = 'Errore login: ' + JSON.stringify(json, null, 2);
+        } else {
+          authToken = json.token;
+          responsePre.textContent = 'Login riuscito! Token ottenuto.';
+          loginForm.style.display = 'none';
+          raceResultForm.style.display = 'block';
+        }
+      } catch (err) {
+        responsePre.textContent = 'Errore di rete: ' + err;
+      }
+    });
+
+    // Gestione invio dati RaceResult
+    raceResultForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!authToken) {
+    responsePre.textContent = 'Errore: devi effettuare il login prima.';
+    return;
+  }
+
+  const formData = new FormData(raceResultForm);
+
+  // Converti timestamp in formato ISO
+  const timestampRaw = raceResultForm.timestamp.value;
+  formData.set('timestamp', new Date(timestampRaw).toISOString());
+
+  try {
+    const res = await fetch('http://127.0.0.1:8000/api/upload/', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Token ' + authToken
+        // NON mettere 'Content-Type': fetch lo imposta automaticamente con boundary
+      },
+      body: formData
+    });
+
+    const json = await res.json();
+
+    if (!res.ok) {
+      responsePre.textContent = 'Errore invio dati: ' + JSON.stringify(json, null, 2);
+      return;
+    }
+
+    // Recupera lista aggiornata
+    const listRes = await fetch('http://127.0.0.1:8000/api/get_list/', {
+      headers: {
+        'Authorization': 'Token ' + authToken
+      }
+    });
+
+    const listJson = await listRes.json();
+    responsePre.textContent = 'Lista aggiornata:\n' + JSON.stringify(listJson, null, 2);
+    raceResultForm.reset();
+
+  } catch (err) {
+    responsePre.textContent = 'Errore di rete: ' + err;
+  }
+});
+
+  </script>
+</body>
+</html>
