@@ -2,5 +2,12 @@ asgiref==3.8.1
 Django==5.2.3
 django-cors-headers==4.7.0
 djangorestframework==3.16.0
+lz4==4.4.4
+numpy==2.3.1
+rosbags==0.10.10
+ruamel.yaml==0.18.14
+ruamel.yaml.clib==0.2.12
 sqlparse==0.5.3
+typing_extensions==4.14.0
 tzdata==2025.2
+zstandard==0.23.0
