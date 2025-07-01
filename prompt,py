@@ -1,0 +1,9 @@
+from rosbags.rosbag2 import Reader
+
+path = "automated-tests-backend/media/rosbags/test_1/"
+try:
+    with Reader(path) as reader:
+        print(f"Found {len(reader.connections)} connections (topics)")
+        print(f"Bag duration: {reader.duration}")
+except Exception as e:
+    print(f"Errore nel leggere il rosbag: {e}")

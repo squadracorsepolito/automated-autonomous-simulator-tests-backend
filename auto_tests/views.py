@@ -16,6 +16,7 @@ from .clean import clean_missing_files  # Import the cleaning function
 from django.shortcuts import get_object_or_404
 from pathlib import Path
 from django.conf import settings
+from django.http import JsonResponse, Http404
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -56,47 +57,36 @@ def upload_rosbags(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated, IsStaffUser])
-@parser_classes([MultiPartParser, FormParser])
-def upload_files(request):
-    yaml_file = request.FILES.get('yaml_file')
-    db_file = request.FILES.get('db_file')
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated, IsStaffUser])
+# @parser_classes([MultiPartParser, FormParser])
+# def upload_files(request):
+#     yaml_file = request.FILES.get('yaml_file')
+#     db_file = request.FILES.get('db_file')
 
-    if not yaml_file or not db_file:
-        return Response({"detail": "yaml_file and db_file are required."}, status=status.HTTP_400_BAD_REQUEST)
+#     if not yaml_file or not db_file:
+#         return Response({"detail": "yaml_file and db_file are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    serializer = RosbagSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+#     serializer = RosbagSerializer(data=request.data)
+#     if serializer.is_valid():
+#         serializer.save()
+#         return Response(serializer.data, status=status.HTTP_201_CREATED)
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def rosbag_json(request, pk):
-    """
-    API endpoint that returns JSON with topics and sample messages from a rosbag.
-    URL: /api/rosbags/<pk>/
-    """
-    clean_missing_files()  # Clean up any missing files before processing
-    rosbag_obj = get_object_or_404(Rosbags, pk=pk)
-    bag_name = Path(rosbag_obj.rosbag_file.name).stem
-    reader = RosbagReader()
+    try:
+        instance = get_object_or_404(Rosbags, pk=pk)
+        folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
 
-    # Gather topics
-    topics = reader.read_topics(bag_name)
+        if not folder_path.exists():
+            return JsonResponse({"error": "Cartella rosbag non trovata"}, status=404)
 
-    # Gather a few messages per topic (e.g., 10 each)
-    data = {'topics': topics, 'messages': []}
-    for topic in topics:
-        msgs = []
-        for msg in reader.read_messages(bag_name, topic_filter=topic['topic'], max_messages=10):
-            # Ensure serializable
-            payload = msg['msg']
-            msg_str = str(payload) if not isinstance(payload, (str, bytes)) else payload
-            msgs.append({'timestamp': msg['timestamp'], 'msg': msg_str})
-        data['messages'].append({'topic': topic['topic'], 'samples': msgs})
+        reader = RosbagReader(folder_path)
+        data = reader.extract_data()
 
-    return Response(data)
+        return JsonResponse(data, safe=False)
+
+    except Exception as e:
+        return JsonResponse({"error": f"Errore lettura rosbag: {str(e)}"}, status=500)
