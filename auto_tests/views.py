@@ -16,7 +16,7 @@ from .clean import clean_missing_files  # Import the cleaning function
 from django.shortcuts import get_object_or_404
 from pathlib import Path
 from django.conf import settings
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -74,16 +74,34 @@ def upload_rosbags(request):
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsStaffUser])
+@parser_classes([MultiPartParser, FormParser])
 def rosbag_json(request, pk):
     try:
         instance = get_object_or_404(Rosbags, pk=pk)
         folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
+        msg_path = Path(settings.MEDIA_ROOT) / "msg" # Assuming msg files are stored in a 'msg' directory under MEDIA_ROOT
 
         if not folder_path.exists():
             return JsonResponse({"error": "Cartella rosbag non trovata"}, status=404)
-
-        reader = RosbagReader(folder_path)
+        
+        if not msg_path.exists():
+            return JsonResponse({"error": "Cartella msg non trovata"}, status=404)
+        
+        # Custom message types to register
+        # These should match the .msg files in msg_path
+        custom_msgs = [
+            "State",
+            "ConeArray",
+            "Cone",
+            "Waypoint",
+            "WaypointArray",
+            "VehicleState",
+            "VehicleCmd",
+        ]
+        
+        # Initialize the RosbagReader with the folder path, msg path, and custom message types
+        reader = RosbagReader(folder_path, msg_path, custom_msgs)
         data = reader.extract_data()
 
         return JsonResponse(data, safe=False)

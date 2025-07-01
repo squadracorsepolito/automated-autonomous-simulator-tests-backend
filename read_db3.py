@@ -1,0 +1,94 @@
+from pathlib import Path
+from rosbags.rosbag2 import Reader
+from rosbags.typesys import Stores, get_typestore, get_types_from_msg
+
+# Path al tuo rosbag
+bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_8")
+
+typestore = get_typestore(Stores.ROS2_FOXY)
+
+# Registrazione tipi custom (se serve)
+msg_path = Path('C:/Users/aless/Desktop/automated-tests-backend/msg/')
+# Lista tipi custom da registrare
+custom_msgs = [
+    "State",
+    "ConeArray",
+    "Cone",
+    "Waypoint",
+    "WaypointArray",
+    "VehicleState",
+    "VehicleCmd",
+]
+
+for msg_name in custom_msgs:
+    msg_file = msg_path / f"{msg_name}.msg"
+    msg_def = msg_file.read_text()
+    types = get_types_from_msg(msg_def, f"interfaces/msg/{msg_name}")
+    typestore.register(types)
+
+
+json_data = {
+    "x": "",
+    "y": "",
+    "yaw": "",
+    "v_y": "",
+    "yaw_r": "",
+    "s": "",
+    "v_s": "",
+    "speed": "",
+    "delta": "",
+    "throttle": "",
+    "state": "",
+    "lap": "",
+    "map_cones": [],
+    "active_cones": [],
+    "waypoint_array": [],
+    "green_points": [],
+}
+
+with Reader(bag_path) as reader:
+    for conn, timestamp, rawdata in reader.messages():
+        msg = typestore.deserialize_cdr(rawdata, conn.msgtype)
+        
+        if conn.topic == "vehicle_state_optimized":
+            json_data["x"] = getattr(msg, "x", "")
+            json_data["y"] = getattr(msg, "y", "")
+            json_data["yaw"] = getattr(msg, "yaw", "")
+            json_data["v_y"] = getattr(msg, "v_y", "")
+            json_data["yaw_r"] = getattr(msg, "yaw_r", "")
+        
+        elif conn.topic == "vehicle_state_measure":
+            json_data["s"] = getattr(msg, "s", "")
+            json_data["v_s"] = getattr(msg, "v_s", "")
+            json_data["delta"] = getattr(msg, "delta", "")
+            json_data["throttle"] = getattr(msg, "d", "")  # attento al nome campo
+
+        elif conn.topic == "vehicle_cmd":
+            json_data["speed"] = getattr(msg, "vs", "")
+        
+        elif conn.topic == "state":
+            json_data["state"] = getattr(msg, "data", "")  # spesso std_msgs/msg/Int32 o simili
+        
+        elif conn.topic == "lap":
+            json_data["lap"] = getattr(msg, "data", "")
+        
+        elif conn.topic == "map":
+            json_data["map_cones"] = [
+                {"x": c.x, "y": c.y, "color": c.color, "id": c.id} for c in getattr(msg, "data", [])
+            ]
+        
+        elif conn.topic == "active_cones":
+            json_data["active_cones"] = [
+                {"x": c.x, "y": c.y, "color": c.color, "id": c.id} for c in getattr(msg, "data", [])
+            ]
+
+        elif conn.topic == "global_trajectory":
+            json_data["waypoint_array"] = [
+                {"x": w.x, "y": w.y, "vel_ref": w.vel_ref} for w in getattr(msg, "data", [])
+            ]
+        
+        elif conn.topic == "predicted_trajectory":
+            json_data["green_points"] = [
+                {"x": w.x, "y": w.y, "vel_ref": w.vel_ref} for w in getattr(msg, "data", [])
+            ]
+
