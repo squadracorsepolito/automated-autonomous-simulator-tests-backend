@@ -1,0 +1,35 @@
+from rosbags.rosbag2 import Reader
+
+path = "C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_8/"
+# try:
+#     with Reader(path) as reader:
+#         print(f"Found {len(reader.connections)} connections (topics)")
+#         print(f"Bag duration: {reader.duration}")
+# except Exception as e:
+#     print(f"Errore nel leggere il rosbag: {e}")
+
+
+from pathlib import Path
+from rosbags.rosbag2 import Reader
+from rosbags.serde import deserialize_cdr
+from rosbags.typesys import get_types_from_msg, register_types
+
+# Path al tuo rosbag
+bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_8")
+
+# Registra i tipi custom dalla cartella .msg
+msg_dir = Path("C:/Users/aless/Desktop/automated-tests-backend/media/msg")  # ⬅️ aggiorna con path reale
+for file in msg_dir.glob("*.msg"):
+    msg_text = file.read_text()
+    msg_fullname = f"interfaces/msg/{file.stem}"
+    types = get_types_from_msg(msg_text, msg_fullname)
+    register_types(types)
+
+# Leggi e decodifica i messaggi
+with Reader(bag_path) as reader:
+    for conn, timestamp, rawdata in reader.messages():
+        if conn.topic == '/vehicle_state_optimized':
+            msg = deserialize_cdr(rawdata, conn.msgtype)
+            print(f"\n⏱ Timestamp: {timestamp}")
+            print(f"🔵 Topic: {conn.topic}")
+            print(f"🧾 Msg: {msg}")

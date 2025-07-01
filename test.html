@@ -27,12 +27,20 @@
     </label><br />
     <label>Rosbag File:
     <input type="file" name="rosbag_file" />
+    <input type="file" name="yaml_file" />
+    <input type="file" name="db_file" />
     </label><br />
     <label>Avg Lap Time: <input type="number" step="0.01" name="avg_lap_time" required /></label><br />
     <label>Timestamp: <input type="datetime-local" name="timestamp" /></label><br />
     <button type="submit">Invia RaceResult</button>
   </form>
-  <button type="show_list">show</button>
+    <h2>Test Rosbags API</h2>
+  <button id="btn-list-rosbags">Show List</button>
+  <br/><br/>
+  <label for="rosbag-id">Rosbag ID:</label>
+  <input type="number" id="rosbag-id" min="1" style="width:4em"/>
+  <button id="btn-detail-rosbag">Show Details</button>
+  <pre id="response" style="background:#f0f0f0; padding:1em;"></pre>
   <pre id="response"></pre>
 
   <script>
@@ -106,7 +114,7 @@
     }
 
     // Recupera lista aggiornata
-    const listRes = await fetch('http://127.0.0.1:8000/api/get_list/', {
+    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/get_list/', {
       headers: {
         'Authorization': 'Token ' + authToken
       }
@@ -115,12 +123,98 @@
     const listJson = await listRes.json();
     responsePre.textContent = 'Lista aggiornata:\n' + JSON.stringify(listJson, null, 2);
     raceResultForm.reset();
+    
 
   } catch (err) {
     responsePre.textContent = 'Errore di rete: ' + err;
   }
+
+  const BASE_URL_RB = 'http://127.0.0.1:8000/api/rosbags/';
+
+async function listRosbags() {
+  try {
+    const res = await fetch(BASE_URL_RB + 'get_list/', {
+      headers: { 'Authorization': 'Token ' + authToken }
+    });
+    const bodyText = await res.text();
+
+    if (!res.ok) {
+      // Errore HTTP (404/500 etc): mostro tutto il corpo della risposta
+      responsePre.textContent = `Errore ${res.status}:\n${bodyText}`;
+      return;
+    }
+
+    // Provo il parse JSON
+    let jsonData;
+    try {
+      jsonData = JSON.parse(bodyText);
+    } catch (parseErr) {
+      responsePre.textContent = 'Risposta non JSON (lista):\n' + bodyText;
+      return;
+    }
+
+    // JSON valido: lo stampo formattato
+    responsePre.textContent = 'Lista rosbags:\n' + JSON.stringify(jsonData, null, 2);
+
+  } catch (networkErr) {
+    responsePre.textContent = 'Errore di rete:\n' + networkErr;
+  }
+}
+
+async function getRosbagDetail(id) {
+  try {
+    const res = await fetch(`${BASE_URL_RB}${id}/`, {
+      headers: { 'Authorization': 'Token ' + authToken }
+    });
+    const bodyText = await res.text();
+
+    if (!res.ok) {
+      responsePre.textContent = `Errore ${res.status}:\n${bodyText}`;
+      return;
+    }
+
+    let jsonData;
+    try {
+      jsonData = JSON.parse(bodyText);
+    } catch (parseErr) {
+      responsePre.textContent = 'Risposta non JSON (detail):\n' + bodyText;
+      return;
+    }
+
+    responsePre.textContent = `Detail rosbag ${id}:\n` + JSON.stringify(jsonData, null, 2);
+
+  } catch (networkErr) {
+    responsePre.textContent = 'Errore di rete:\n' + networkErr;
+  }
+}
+
+// Listener sui bottoni
+document.getElementById('btn-list-rosbags').addEventListener('click', () => {
+  if (!authToken) {
+    responsePre.textContent = 'Effettua il login prima';
+    return;
+  }
+  listRosbags();
+});
+
+document.getElementById('btn-detail-rosbag').addEventListener('click', () => {
+  if (!authToken) {
+    responsePre.textContent = 'Effettua il login prima';
+    return;
+  }
+  const id = parseInt(document.getElementById('rosbag-id').value, 10);
+  if (!id) {
+    responsePre.textContent = 'Inserisci un ID valido';
+    return;
+  }
+  getRosbagDetail(id);
+});
+
+
 });
 
   </script>
 </body>
 </html>
+
+
