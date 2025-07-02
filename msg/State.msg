@@ -1,0 +1,7 @@
+uint8 INITIALIZATION=0
+uint8 EXPLORATION=1
+uint8 RACING=2
+uint8 STOP=3
+uint8 ERROR=4
+
+uint8 data

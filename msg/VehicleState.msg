@@ -1,0 +1,10 @@
+float64 x
+float64 y
+float64 yaw
+float64 v_x
+float64 v_y
+float64 yaw_r
+float64 s
+float64 v_s
+float64 delta
+float64 d

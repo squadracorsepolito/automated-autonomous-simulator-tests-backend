@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404
 from pathlib import Path
 from django.conf import settings
 from django.http import JsonResponse
+import json
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -80,16 +81,23 @@ def rosbag_json(request, pk):
     try:
         instance = get_object_or_404(Rosbags, pk=pk)
         folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
-        msg_path = Path(settings.MEDIA_ROOT) / "msg" # Assuming msg files are stored in a 'msg' directory under MEDIA_ROOT
+        msg_path = Path(settings.BASE_DIR) / "msg"  # msg directory
 
         if not folder_path.exists():
             return JsonResponse({"error": "Cartella rosbag non trovata"}, status=404)
         
         if not msg_path.exists():
             return JsonResponse({"error": "Cartella msg non trovata"}, status=404)
-        
-        # Custom message types to register
-        # These should match the .msg files in msg_path
+
+        # Se esiste file JSON nel db, ritorna il suo contenuto direttamente
+        if instance.json_file and instance.json_file.storage.exists(instance.json_file.name):
+            # Apri e leggi il file JSON salvato
+            with instance.json_file.open("r") as f:
+                data = f.read()
+            # Restituisci come JsonResponse
+            return JsonResponse(json.loads(data), safe=False)
+
+        # Altrimenti crea il JSON con il RosbagReader
         custom_msgs = [
             "State",
             "ConeArray",
@@ -99,10 +107,13 @@ def rosbag_json(request, pk):
             "VehicleState",
             "VehicleCmd",
         ]
-        
-        # Initialize the RosbagReader with the folder path, msg path, and custom message types
+
         reader = RosbagReader(folder_path, msg_path, custom_msgs)
         data = reader.extract_data()
+
+        # Salva il JSON nel campo json_file
+        # json_string = json.dumps(data, indent=4)
+        # instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
 
         return JsonResponse(data, safe=False)
 
