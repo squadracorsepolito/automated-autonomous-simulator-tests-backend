@@ -4,6 +4,9 @@ from .models import Rosbags
 import zipfile
 from pathlib import Path
 from django.conf import settings
+import json
+from .rosbag_reader import RosbagReader  # Import the utility class to read rosbag files
+from django.core.files.base import ContentFile
 
 class RosbagSerializer(serializers.ModelSerializer):
     rosbag_file = serializers.FileField(required=False, allow_null=True)
@@ -13,6 +16,31 @@ class RosbagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rosbags
         fields = '__all__'
+
+    def json_serializer(self, pk):
+        folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
+        msg_path = Path(settings.BASE_DIR) / "msg"
+
+        if not folder_path.exists():
+            raise FileNotFoundError("Cartella rosbag non trovata")
+        if not msg_path.exists():
+            raise FileNotFoundError("Cartella msg non trovata")
+
+        custom_msgs = [
+            "State", "ConeArray", "Cone", "Waypoint",
+            "WaypointArray", "VehicleState", "VehicleCmd"
+        ]
+        
+        # Initialize the RosbagReader with the folder path, msg path, and custom message types
+        reader = RosbagReader(folder_path, msg_path, custom_msgs)
+        data = reader.extract_data()
+
+        # Serialize the data to JSON format
+        # Ensure that the data is serializable to JSON  
+        json_string = json.dumps(data, indent=4)
+
+
+        return ContentFile(json_string)
 
     def create(self, validated_data):
         # Extract files from validated_data, if present
@@ -70,5 +98,12 @@ class RosbagSerializer(serializers.ModelSerializer):
             if db_file:
                 instance.db_file.save(db_file.name, db_file, save=False)
             instance.save(update_fields=['yaml_file', 'db_file'])
+
+        # Serialize the JSON data
+        if instance.db_file and instance.yaml_file:
+            json_content = self.json_serializer(instance.pk) # Get the JSON content as a ContentFile
+            json_filename = f"data_{instance.pk}.json" # Name the JSON file
+            instance.json_file.save(json_filename, json_content, save=False) # Save the JSON file without saving the instance yet
+            instance.save(update_fields=["json_file"]) 
 
         return instance

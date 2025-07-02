@@ -1,7 +1,7 @@
 from pathlib import Path
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore, get_types_from_msg
-
+import copy
 
 class RosbagReader:
     def __init__(self, bag_path: Path, msg_path: Path, custom_msgs: list[str]):
@@ -15,7 +15,7 @@ class RosbagReader:
             types = get_types_from_msg(msg_def, f"interfaces/msg/{msg_name}")
             self.typestore.register(types)
 
-    def extract_data(self, max_messages=100, sample_step: int = 4):
+    def extract_data(self, max_messages=100, sample_step: int = 1):
         data = []
         allowed_topics = {
             "/vehicle_state_optimized",
@@ -70,7 +70,8 @@ class RosbagReader:
 
                     if count % sample_step == 0:
                         # Aggiungi solo ogni sample_step messaggio
-                        data.append(json_data)
+                        data.append(copy.deepcopy(json_data))
+
 
                 elif conn.topic == "/vehicle_state_measure":
                     json_data["s"] = getattr(msg, "s", "")
@@ -112,5 +113,4 @@ class RosbagReader:
 
                 # if count >= max_messages:
                 #     break
-        
         return data

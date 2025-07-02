@@ -3,7 +3,7 @@ from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore, get_types_from_msg
 
 # Path al tuo rosbag
-bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_8")
+bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_22")
 
 typestore = get_typestore(Stores.ROS2_FOXY)
 
@@ -50,45 +50,47 @@ with Reader(bag_path) as reader:
     for conn, timestamp, rawdata in reader.messages():
         msg = typestore.deserialize_cdr(rawdata, conn.msgtype)
         
-        if conn.topic == "vehicle_state_optimized":
+        if conn.topic == "/vehicle_state_optimized":
             json_data["x"] = getattr(msg, "x", "")
             json_data["y"] = getattr(msg, "y", "")
             json_data["yaw"] = getattr(msg, "yaw", "")
             json_data["v_y"] = getattr(msg, "v_y", "")
             json_data["yaw_r"] = getattr(msg, "yaw_r", "")
+            print(json_data)
         
-        elif conn.topic == "vehicle_state_measure":
+        elif conn.topic == "/vehicle_state_measure":
             json_data["s"] = getattr(msg, "s", "")
             json_data["v_s"] = getattr(msg, "v_s", "")
             json_data["delta"] = getattr(msg, "delta", "")
             json_data["throttle"] = getattr(msg, "d", "")  # attento al nome campo
 
-        elif conn.topic == "vehicle_cmd":
+        elif conn.topic == "/vehicle_cmd":
             json_data["speed"] = getattr(msg, "vs", "")
         
-        elif conn.topic == "state":
+        elif conn.topic == "/state":
             json_data["state"] = getattr(msg, "data", "")  # spesso std_msgs/msg/Int32 o simili
         
-        elif conn.topic == "lap":
+        elif conn.topic == "/lap":
             json_data["lap"] = getattr(msg, "data", "")
         
-        elif conn.topic == "map":
+        elif conn.topic == "/map":
             json_data["map_cones"] = [
                 {"x": c.x, "y": c.y, "color": c.color, "id": c.id} for c in getattr(msg, "data", [])
             ]
         
-        elif conn.topic == "active_cones":
+        elif conn.topic == "/active_cones":
             json_data["active_cones"] = [
                 {"x": c.x, "y": c.y, "color": c.color, "id": c.id} for c in getattr(msg, "data", [])
             ]
 
-        elif conn.topic == "global_trajectory":
+        elif conn.topic == "/global_trajectory":
             json_data["waypoint_array"] = [
                 {"x": w.x, "y": w.y, "vel_ref": w.vel_ref} for w in getattr(msg, "data", [])
             ]
         
-        elif conn.topic == "predicted_trajectory":
+        elif conn.topic == "/predicted_trajectory":
             json_data["green_points"] = [
                 {"x": w.x, "y": w.y, "vel_ref": w.vel_ref} for w in getattr(msg, "data", [])
             ]
 
+        
