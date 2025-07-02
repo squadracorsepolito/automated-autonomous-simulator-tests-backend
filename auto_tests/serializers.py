@@ -7,6 +7,11 @@ from django.conf import settings
 import json
 from .rosbag_reader import RosbagReader  # Import the utility class to read rosbag files
 from django.core.files.base import ContentFile
+from django.core.files import File
+from rest_framework.exceptions import ValidationError
+from django.db import transaction
+import shutil
+
 
 class RosbagSerializer(serializers.ModelSerializer):
     rosbag_file = serializers.FileField(required=False, allow_null=True)
@@ -22,17 +27,17 @@ class RosbagSerializer(serializers.ModelSerializer):
         yaml_file = data.get('yaml_file')
         db_file = data.get('db_file')
 
-        # CASE 1: rosbag_file è presente, yaml/db no
+        # CASE 1: rosbag_file is provided, yaml/db are not
         if rosbag_file and not yaml_file and not db_file:
             return data
 
-        # CASE 2: yaml_file e db_file presenti
+        # CASE 2: yaml_file and db_file are provided
         if yaml_file and db_file:
             return data
 
-        # Caso non valido: né combinazione 1 né 2
+        # Invalid case: neither combination 1 nor 2
         raise serializers.ValidationError(
-            "Devi fornire un file ZIP rosbag **oppure** entrambi i file YAML e DB."
+            "You must provide a ZIP rosbag file OR both YAML and DB files."
         )
 
     def json_serializer(self, pk):
@@ -40,9 +45,9 @@ class RosbagSerializer(serializers.ModelSerializer):
         msg_path = Path(settings.BASE_DIR) / "msg"
 
         if not folder_path.exists():
-            raise FileNotFoundError("Cartella rosbag non trovata")
+            raise FileNotFoundError("Rosbag folder not found")
         if not msg_path.exists():
-            raise FileNotFoundError("Cartella msg non trovata")
+            raise FileNotFoundError("Msg folder not found")
 
         custom_msgs = [
             "State", "ConeArray", "Cone", "Waypoint",
@@ -57,7 +62,6 @@ class RosbagSerializer(serializers.ModelSerializer):
         # Ensure that the data is serializable to JSON  
         json_string = json.dumps(data, indent=4)
 
-
         return ContentFile(json_string)
 
     def create(self, validated_data):
@@ -66,62 +70,73 @@ class RosbagSerializer(serializers.ModelSerializer):
         db_file = validated_data.pop('db_file', None)
         rosbag_file = validated_data.pop('rosbag_file', None)
 
-        # First create the base instance to get the ID
-        instance = Rosbags.objects.create(**validated_data)
+        with transaction.atomic():
+            # First create the base instance to get the ID
+            instance = Rosbags.objects.create(**validated_data)
 
-        # --- CASE 1: ZIP provided AND yaml/db NOT provided ---
-        if rosbag_file and not yaml_file and not db_file:
+            # --- CASE 1: ZIP provided AND yaml/db NOT provided ---
+            if rosbag_file and not yaml_file and not db_file:
 
-            instance.rosbag_file.save(rosbag_file.name, rosbag_file, save=False)
-            instance.save(update_fields=["rosbag_file"])
+                instance.rosbag_file.save(rosbag_file.name, rosbag_file, save=False)
+                instance.save(update_fields=["rosbag_file"])
 
-            file_path = Path(instance.rosbag_file.path)
-            if zipfile.is_zipfile(file_path):
-                extract_dir = Path(settings.MEDIA_ROOT) / f'rosbags/test_{instance.id}'
-                extract_dir.mkdir(parents=True, exist_ok=True)
+                file_path = Path(instance.rosbag_file.path)
+                if zipfile.is_zipfile(file_path):
+                    extract_dir = Path(settings.MEDIA_ROOT) / f'rosbags/test_{instance.id}'
+                    extract_dir.mkdir(parents=True, exist_ok=True)
 
-                with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                    all_files = zip_ref.namelist()
+                    with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                        all_files = zip_ref.namelist()
 
-                    root_folder = all_files[0].split('/')[0] if all_files else None
-                    if not all(f.startswith(root_folder + '/') for f in all_files):
-                        root_folder = None
+                        root_folder = all_files[0].split('/')[0] if all_files else None
+                        if not all(f.startswith(root_folder + '/') for f in all_files):
+                            root_folder = None
 
-                    for file in all_files:
-                        if file.endswith('/'):
-                            continue
-                        relative_path = Path(file).relative_to(root_folder) if root_folder else Path(file)
-                        target_path = extract_dir / relative_path
-                        target_path.parent.mkdir(parents=True, exist_ok=True)
-                        with zip_ref.open(file) as src, open(target_path, 'wb') as dst:
-                            dst.write(src.read())
+                        for file in all_files:
+                            if file.endswith('/'):
+                                continue
+                            relative_path = Path(file).relative_to(root_folder) if root_folder else Path(file)
+                            target_path = extract_dir / relative_path
+                            target_path.parent.mkdir(parents=True, exist_ok=True)
+                            with zip_ref.open(file) as src, open(target_path, 'wb') as dst:
+                                dst.write(src.read())
 
-                # Search for files
-                extracted_yaml = next(extract_dir.glob("*.yaml"), None)
-                extracted_db = next(extract_dir.glob("*.db*"), None)
+                    # Search for files
+                    extracted_yaml = next(extract_dir.glob("*.yaml"), None)
+                    extracted_db = next(extract_dir.glob("*.db*"), None)
 
-                if extracted_yaml:
-                    instance.yaml_file.name = f'rosbags/test_{instance.id}/{extracted_yaml.name}'
-                if extracted_db:
-                    instance.db_file.name = f'rosbags/test_{instance.id}/{extracted_db.name}'
+                    # Check if both extracted files are present
+                    if extracted_yaml and extracted_db:
 
-                instance.rosbag_file.delete(save=False)
-                instance.rosbag_file = None
-                instance.save(update_fields=['yaml_file', 'db_file', 'rosbag_file'])
+                        with open(extracted_yaml, 'rb') as f_yaml:
+                            instance.yaml_file.save(extracted_yaml.name, File(f_yaml), save=False)
+                        with open(extracted_db, 'rb') as f_db:
+                            instance.db_file.save(extracted_db.name, File(f_db), save=False)
 
-        # --- CASE 2: yaml/db provided (ZIP ignored) ---
-        else:
-            if yaml_file:
-                instance.yaml_file.save(yaml_file.name, yaml_file, save=False)
-            if db_file:
-                instance.db_file.save(db_file.name, db_file, save=False)
-            instance.save(update_fields=['yaml_file', 'db_file'])
+                        # Now that the extracted files have been saved, delete the ZIP
+                        instance.rosbag_file.delete(save=False)
+                        instance.rosbag_file = None
 
-        # Serialize the JSON data
-        if instance.db_file and instance.yaml_file:
-            json_content = self.json_serializer(instance.pk) # Get the JSON content as a ContentFile
-            json_filename = f"data_{instance.pk}.json" # Name the JSON file
-            instance.json_file.save(json_filename, json_content, save=False) # Save the JSON file without saving the instance yet
-            instance.save(update_fields=["json_file"]) 
+                        instance.save(update_fields=['yaml_file', 'db_file', 'rosbag_file'])
+                    else:
+                        # cancella la cartella estratta perché non valida
+                        if extract_dir.exists():
+                            shutil.rmtree(extract_dir)
+                        # Raise a clear error if files are missing
+                        raise ValidationError("The extracted files do not contain the required yaml or db files.")
+            # --- CASE 2: yaml/db provided (ZIP ignored) ---
+            else:
+                if yaml_file:
+                    instance.yaml_file.save(yaml_file.name, yaml_file, save=False)
+                if db_file:
+                    instance.db_file.save(db_file.name, db_file, save=False)
+                instance.save(update_fields=['yaml_file', 'db_file'])
 
-        return instance
+            # Serialize the JSON data
+            if instance.db_file and instance.yaml_file:
+                json_content = self.json_serializer(instance.pk) # Get the JSON content as a ContentFile
+                json_filename = f"data_{instance.pk}.json" # Name the JSON file
+                instance.json_file.save(json_filename, json_content, save=False) # Save the JSON file without saving the instance yet
+                instance.save(update_fields=["json_file"]) 
+
+            return instance
