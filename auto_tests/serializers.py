@@ -17,6 +17,24 @@ class RosbagSerializer(serializers.ModelSerializer):
         model = Rosbags
         fields = '__all__'
 
+    def validate(self, data):
+        rosbag_file = data.get('rosbag_file')
+        yaml_file = data.get('yaml_file')
+        db_file = data.get('db_file')
+
+        # CASE 1: rosbag_file è presente, yaml/db no
+        if rosbag_file and not yaml_file and not db_file:
+            return data
+
+        # CASE 2: yaml_file e db_file presenti
+        if yaml_file and db_file:
+            return data
+
+        # Caso non valido: né combinazione 1 né 2
+        raise serializers.ValidationError(
+            "Devi fornire un file ZIP rosbag **oppure** entrambi i file YAML e DB."
+        )
+
     def json_serializer(self, pk):
         folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
         msg_path = Path(settings.BASE_DIR) / "msg"
