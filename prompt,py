@@ -1,6 +1,7 @@
-from rosbags.rosbag2 import Reader
+# from rosbags.rosbag2 import Reader
 
-path = "C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_8/"
+path = "C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_1/"
+types_paths = "C:/Users/aless/Desktop/automated-tests-backend/msg"
 # try:
 #     with Reader(path) as reader:
 #         print(f"Found {len(reader.connections)} connections (topics)")
@@ -9,27 +10,49 @@ path = "C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_8/"
 #     print(f"Errore nel leggere il rosbag: {e}")
 
 
+# from pathlib import Path
+# from rosbags.rosbag2 import Reader
+# from rosbags.serde import deserialize_cdr
+# from rosbags.typesys import get_types_from_msg, register_types
+
+# # Path al tuo rosbag
+# bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_8")
+
+# # Registra i tipi custom dalla cartella .msg
+# msg_dir = Path("C:/Users/aless/Desktop/automated-tests-backend/media/msg")  # ⬅️ aggiorna con path reale
+# for file in msg_dir.glob("*.msg"):
+#     msg_text = file.read_text()
+#     msg_fullname = f"interfaces/msg/{file.stem}"
+#     types = get_types_from_msg(msg_text, msg_fullname)
+#     register_types(types)
+
+# # Leggi e decodifica i messaggi
+# with Reader(bag_path) as reader:
+#     for conn, timestamp, rawdata in reader.messages():
+#         if conn.topic == '/vehicle_state_optimized':
+#             msg = deserialize_cdr(rawdata, conn.msgtype)
+#             print(f"/n⏱ Timestamp: {timestamp}")
+#             print(f"🔵 Topic: {conn.topic}")
+#             print(f"🧾 Msg: {msg}")
+
+
 from pathlib import Path
-from rosbags.rosbag2 import Reader
-from rosbags.serde import deserialize_cdr
-from rosbags.typesys import get_types_from_msg, register_types
 
-# Path al tuo rosbag
-bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_8")
+from rosbags.rosbag1 import Reader as Rosbag1Reader
 
-# Registra i tipi custom dalla cartella .msg
-msg_dir = Path("C:/Users/aless/Desktop/automated-tests-backend/media/msg")  # ⬅️ aggiorna con path reale
-for file in msg_dir.glob("*.msg"):
-    msg_text = file.read_text()
-    msg_fullname = f"interfaces/msg/{file.stem}"
-    types = get_types_from_msg(msg_text, msg_fullname)
-    register_types(types)
+output_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_1/output_rosbag1.bag")
+# path = 'output_rosbag1.bag'
 
-# Leggi e decodifica i messaggi
-with Reader(bag_path) as reader:
-    for conn, timestamp, rawdata in reader.messages():
-        if conn.topic == '/vehicle_state_optimized':
-            msg = deserialize_cdr(rawdata, conn.msgtype)
-            print(f"\n⏱ Timestamp: {timestamp}")
-            print(f"🔵 Topic: {conn.topic}")
-            print(f"🧾 Msg: {msg}")
+with Rosbag1Reader(output_path) as reader:
+    print(f"File aperto: {output_path}")
+    print(f"Numero connessioni: {len(reader.connections)}")
+    print(f"Numero messaggi: {reader.message_count}")
+
+    # Leggiamo e stampiamo i primi 5 messaggi
+    count = 0
+    for connection, timestamp, data in reader.messages():
+        print(f"Topic: {connection.topic}, Timestamp: {timestamp}")
+        count += 1
+        if count >= 5:
+            break
+    print(f"Messaggi rosbag2 letti: {count}")

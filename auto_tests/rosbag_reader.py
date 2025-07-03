@@ -6,7 +6,7 @@ import copy
 class RosbagReader:
     def __init__(self, bag_path: Path, msg_path: Path, custom_msgs: list[str]):
         self.bag_path = bag_path
-        self.typestore = get_typestore(Stores.ROS2_FOXY)
+        self.typestore = get_typestore(Stores.ROS2_HUMBLE)
 
         # Registro tipi custom
         for msg_name in custom_msgs:
@@ -14,6 +14,26 @@ class RosbagReader:
             msg_def = msg_file.read_text()
             types = get_types_from_msg(msg_def, f"interfaces/msg/{msg_name}")
             self.typestore.register(types)
+
+    def test_typestore(self, pk: int = 1):
+        from rosbags.convert.commands import command
+
+        dst = Path(self.bag_path / f"output_rosbag_{pk}.bag")
+        
+        result = command(
+            srcs=[self.bag_path],
+            dst=dst,
+            src_typestore_ref="my_typestores:nmea_typestore",
+            dst_typestore="ros1_noetic",
+            # opzionale: compress="none", compress_mode="file", ecc.
+        )
+
+        if result != 0:
+            return ("Error during conversion: " + str(result))
+        else:
+            return dst
+
+
 
     def extract_data(self, max_messages=100, sample_step: int = 1):
         data = []

@@ -16,7 +16,7 @@ from .clean import clean_missing_files  # Import the cleaning function
 from django.shortcuts import get_object_or_404
 from pathlib import Path
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 import json
 
 @api_view(['GET'])
@@ -109,13 +109,17 @@ def rosbag_json(request, pk):
         ]
 
         reader = RosbagReader(folder_path, msg_path, custom_msgs)
-        data = reader.extract_data()
+        # data = reader.extract_data()
+        output_path = reader.test_typestore(pk)  # Esegui il test del typestore
 
         # Salva il JSON nel campo json_file
         # json_string = json.dumps(data, indent=4)
         # instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
+        if not output_path.exists():
+            return Response({"error": "Errore nella conversione"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return JsonResponse(data, safe=False)
+        return FileResponse(open(output_path, 'rb'), as_attachment=True, filename=f'output_rosbag_{pk}.bag')
+        # return JsonResponse(data, safe=False)
 
     except Exception as e:
         return JsonResponse({"error": f"Errore lettura rosbag: {str(e)}"}, status=500)
