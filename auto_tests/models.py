@@ -10,7 +10,8 @@ class Rosbags(models.Model):
     number_of_evaluated_cones_yellow = models.IntegerField()  # Coni gialli valutati
     number_of_evaluated_cones_blue = models.IntegerField()  # Coni blu valutati
     is_successful = models.BooleanField(default=False)  # Successo o meno
-    rosbag_file = models.FileField(upload_to='temp_zips/', null=True, blank=True)
+    zip_file = models.FileField(upload_to='temp_zips/', null=True, blank=True)
+    rosbag_file = models.FileField(upload_to=rosbag_upload_path, null=True, blank=True)
     db_file = models.FileField(upload_to=rosbag_upload_path, null=True, blank=True) # File rosbag (cartella media/rosbags)
     yaml_file = models.FileField(upload_to=rosbag_upload_path, null=True, blank=True) # File rosbag (cartella media/rosbags)
     json_file = models.FileField(upload_to=rosbag_upload_path, null=True, blank=True) # File rosbag (cartella media/rosbags)

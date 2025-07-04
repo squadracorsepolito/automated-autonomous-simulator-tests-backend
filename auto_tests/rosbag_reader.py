@@ -20,19 +20,31 @@ class RosbagReader:
 
         dst = Path(self.bag_path / f"output_rosbag_{pk}.bag")
         
-        result = command(
-            srcs=[self.bag_path],
-            dst=dst,
-            src_typestore_ref="my_typestores:nmea_typestore",
-            dst_typestore="ros1_noetic",
-            # opzionale: compress="none", compress_mode="file", ecc.
-        )
+        try:
+            result = command(
+                srcs=[self.bag_path],
+                dst=dst,
+                src_typestore_ref="my_typestores:nmea_typestore",
+                dst_typestore="ros1_noetic",
+                # opzionale: compress="none", compress_mode="file", ecc.
+            )
 
-        if result != 0:
-            return ("Error during conversion: " + str(result))
-        else:
-            return dst
+            if result != 0:
+                return ("Error during conversion: " + str(result))
+            else:
+                
+                # path assoluto della cartella media
+                media_path = Path("media").resolve()
+                print(f"Media path: {media_path}")
 
+                # path relativo a media/
+                dst = dst.relative_to(media_path)
+                # print(f"Converted rosbag saved at: {dst}")
+
+                return dst
+            
+        except PermissionError as e:
+            raise Exception(f"Errore di permessi durante la conversione: {e}")
 
 
     def extract_data(self, max_messages=100, sample_step: int = 1):

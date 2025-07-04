@@ -17,6 +17,7 @@ from django.shortcuts import get_object_or_404
 from pathlib import Path
 from django.conf import settings
 from django.http import JsonResponse, FileResponse
+from django.core.files.base import ContentFile
 import json
 
 @api_view(['GET'])
@@ -88,14 +89,20 @@ def rosbag_json(request, pk):
         
         if not msg_path.exists():
             return JsonResponse({"error": "Cartella msg non trovata"}, status=404)
-
+        
+        if settings.JSON_FIELD_ENCODED:
         # Se esiste file JSON nel db, ritorna il suo contenuto direttamente
-        if instance.json_file and instance.json_file.storage.exists(instance.json_file.name):
-            # Apri e leggi il file JSON salvato
-            with instance.json_file.open("r") as f:
-                data = f.read()
-            # Restituisci come JsonResponse
-            return JsonResponse(json.loads(data), safe=False)
+            if instance.json_file and instance.json_file.storage.exists(instance.json_file.name):
+                # Apri e leggi il file JSON salvato
+                with instance.json_file.open("r") as f:
+                    data = f.read()
+                # Restituisci come JsonResponse
+                return JsonResponse(json.loads(data), safe=False)
+
+        if instance.rosbag_file and instance.rosbag_file.storage.exists(instance.rosbag_file.name):
+            # Se esiste il file rosbag, prova a convertirlo
+            file_name = f"output_rosbag_{pk}.bag"
+            return FileResponse(open(Path(folder_path / file_name), 'rb'), as_attachment=True, filename=file_name)
 
         # Altrimenti crea il JSON con il RosbagReader
         custom_msgs = [
@@ -109,12 +116,17 @@ def rosbag_json(request, pk):
         ]
 
         reader = RosbagReader(folder_path, msg_path, custom_msgs)
-        # data = reader.extract_data()
-        output_path = reader.test_typestore(pk)  # Esegui il test del typestore
 
-        # Salva il JSON nel campo json_file
-        # json_string = json.dumps(data, indent=4)
-        # instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
+        output_path = reader.test_typestore(pk).resolve()  # Esegui il test del typestore
+        print(f"Output path: {output_path}")
+
+        if settings.JSON_FIELD_ENCODED:
+            # Se JSON_FIELD_ENCODED è abilitato, usa il metodo json_serializer
+            data = reader.extract_data(pk)
+            # Salva il JSON nel campo json_file
+            json_string = json.dumps(data, indent=4)
+            instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
+
         if not output_path.exists():
             return Response({"error": "Errore nella conversione"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

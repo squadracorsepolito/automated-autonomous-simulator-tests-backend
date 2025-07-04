@@ -40,7 +40,8 @@ from pathlib import Path
 
 from rosbags.rosbag1 import Reader as Rosbag1Reader
 
-output_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_1/output_rosbag1.bag")
+value = 50
+output_path = Path(f"C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_{value}/output_rosbag_{value}.bag")
 # path = 'output_rosbag1.bag'
 
 with Rosbag1Reader(output_path) as reader:

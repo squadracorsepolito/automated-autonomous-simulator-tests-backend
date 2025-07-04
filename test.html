@@ -26,7 +26,7 @@
       </select>
     </label><br />
     <label>Rosbag File:
-    <input type="file" name="rosbag_file" />
+    <input type="file" name="zip_file" />
     <input type="file" name="yaml_file" />
     <input type="file" name="db_file" />
     </label><br />
@@ -166,25 +166,35 @@ async function getRosbagDetail(id) {
     const res = await fetch(`${BASE_URL_RB}${id}/`, {
       headers: { 'Authorization': 'Token ' + authToken }
     });
-    const bodyText = await res.text();
 
     if (!res.ok) {
+      const bodyText = await res.text();
       responsePre.textContent = `Errore ${res.status}:\n${bodyText}`;
       return;
     }
 
-    let jsonData;
-    try {
-      jsonData = JSON.parse(bodyText);
-    } catch (parseErr) {
-      responsePre.textContent = 'Risposta non JSON (detail):\n' + bodyText;
-      return;
-    }
+    // Prendi nome file dalla Content-Disposition, se presente
+    const contentDisposition = res.headers.get('Content-Disposition');
+    const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] || `rosbag_${id}.bag`;
 
-    responsePre.textContent = `Detail rosbag ${id}:\n` + JSON.stringify(jsonData, null, 2);
+    // Ottieni il contenuto come Blob
+    const blob = await res.blob();
 
-  } catch (networkErr) {
-    responsePre.textContent = 'Errore di rete:\n' + networkErr;
+    // Crea link per scaricare il file
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    responsePre.textContent = `File rosbag ${filename} scaricato con successo.`;
+
+  } catch (err) {
+    responsePre.textContent = 'Errore di rete:\n' + err;
   }
 }
 

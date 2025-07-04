@@ -12,9 +12,8 @@ from rest_framework.exceptions import ValidationError
 from django.db import transaction
 import shutil
 
-
 class RosbagSerializer(serializers.ModelSerializer):
-    rosbag_file = serializers.FileField(required=False, allow_null=True)
+    zip_file = serializers.FileField(required=False, allow_null=True)
     db_file = serializers.FileField(required=False, allow_null=True)
     yaml_file = serializers.FileField(required=False, allow_null=True)
 
@@ -23,12 +22,12 @@ class RosbagSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, data):
-        rosbag_file = data.get('rosbag_file')
+        zip_file = data.get('zip_file')
         yaml_file = data.get('yaml_file')
         db_file = data.get('db_file')
 
         # CASE 1: rosbag_file is provided, yaml/db are not
-        if rosbag_file and not yaml_file and not db_file:
+        if zip_file and not yaml_file and not db_file:
             return data
 
         # CASE 2: yaml_file and db_file are provided
@@ -63,24 +62,45 @@ class RosbagSerializer(serializers.ModelSerializer):
         json_string = json.dumps(data, indent=4)
 
         return ContentFile(json_string)
+    
+    def rosbag_serializer(self, pk):
+        folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
+        msg_path = Path(settings.BASE_DIR) / "msg"
+
+        if not folder_path.exists():
+            raise FileNotFoundError("Rosbag folder not found")
+        if not msg_path.exists():
+            raise FileNotFoundError("Msg folder not found")
+
+        custom_msgs = [
+            "State", "ConeArray", "Cone", "Waypoint",
+            "WaypointArray", "VehicleState", "VehicleCmd"
+        ]
+        
+        # Initialize the RosbagReader with the folder path, msg path, and custom message types
+        reader = RosbagReader(folder_path, msg_path, custom_msgs)
+        output_path = reader.test_typestore(pk)
+
+        return output_path
 
     def create(self, validated_data):
         # Extract files from validated_data, if present
         yaml_file = validated_data.pop('yaml_file', None)
         db_file = validated_data.pop('db_file', None)
-        rosbag_file = validated_data.pop('rosbag_file', None)
+        zip_file = validated_data.pop('zip_file', None)
 
+        # Ensure that at least one of the files is provided
         with transaction.atomic():
             # First create the base instance to get the ID
             instance = Rosbags.objects.create(**validated_data)
 
             # --- CASE 1: ZIP provided AND yaml/db NOT provided ---
-            if rosbag_file and not yaml_file and not db_file:
+            if zip_file and not yaml_file and not db_file:
 
-                instance.rosbag_file.save(rosbag_file.name, rosbag_file, save=False)
-                instance.save(update_fields=["rosbag_file"])
+                instance.zip_file.save(zip_file.name, zip_file, save=False)
+                instance.save(update_fields=["zip_file"])
 
-                file_path = Path(instance.rosbag_file.path)
+                file_path = Path(instance.zip_file.path)
                 if zipfile.is_zipfile(file_path):
                     extract_dir = Path(settings.MEDIA_ROOT) / f'rosbags/test_{instance.id}'
                     extract_dir.mkdir(parents=True, exist_ok=True)
@@ -107,17 +127,18 @@ class RosbagSerializer(serializers.ModelSerializer):
 
                     # Check if both extracted files are present
                     if extracted_yaml and extracted_db:
+                        # Save the extracted files to the instance
+                        yaml_path = str(extracted_yaml.relative_to(settings.MEDIA_ROOT))
+                        db_path = str(extracted_db.relative_to(settings.MEDIA_ROOT))
 
-                        with open(extracted_yaml, 'rb') as f_yaml:
-                            instance.yaml_file.save(extracted_yaml.name, File(f_yaml), save=False)
-                        with open(extracted_db, 'rb') as f_db:
-                            instance.db_file.save(extracted_db.name, File(f_db), save=False)
+                        instance.yaml_file.name = yaml_path
+                        instance.db_file.name   = db_path
 
                         # Now that the extracted files have been saved, delete the ZIP
-                        instance.rosbag_file.delete(save=False)
-                        instance.rosbag_file = None
+                        instance.zip_file.delete(save=False)
+                        instance.zip_file = None
 
-                        instance.save(update_fields=['yaml_file', 'db_file', 'rosbag_file'])
+                        instance.save(update_fields=['yaml_file', 'db_file', 'zip_file'])
                     else:
                         # cancella la cartella estratta perché non valida
                         if extract_dir.exists():
@@ -134,9 +155,26 @@ class RosbagSerializer(serializers.ModelSerializer):
 
             # Serialize the JSON data
             if instance.db_file and instance.yaml_file:
-                json_content = self.json_serializer(instance.pk) # Get the JSON content as a ContentFile
-                json_filename = f"data_{instance.pk}.json" # Name the JSON file
-                instance.json_file.save(json_filename, json_content, save=False) # Save the JSON file without saving the instance yet
-                instance.save(update_fields=["json_file"]) 
+                fields = []  # Fields to update in the instance
+                if settings.JSON_FIELD_ENCODED:  # If JSON is enabled, serialize the data
+                    fields.append('json_file')  # Add json_file to the fields to update
+                    json_content = self.json_serializer(instance.pk) # Get the JSON content as a ContentFile
+                    json_filename = f"data_{instance.pk}.json" # Name the JSON file
+
+                    instance.json_file.save(json_filename, json_content, save=False) # Save the JSON file without saving the instance yet
+
+                # Serialize the ROS bag data
+                fields.append('rosbag_file')
+
+                # Create the ROS bag file using the rosbag_serializer
+                # This will create the ROS bag file in the media/rosbags/test_{pk}
+                # Use the rosbag_serializer to get the path of the ROS bag file
+                rosbag_path = str(self.rosbag_serializer(instance.pk)) # Get the path
+                
+                if f"output_rosbag_{instance.pk}.bag" in rosbag_path: # Name the JSON file
+                    instance.rosbag_file.name = rosbag_path  # solo il path relativo al MEDIA_ROOT
+                
+                instance.save(update_fields=fields) # Save the instance with the new JSON file
+
 
             return instance

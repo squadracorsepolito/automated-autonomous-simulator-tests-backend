@@ -9,7 +9,7 @@ msg_dir = Path("C:/Users/aless/Desktop/automated-tests-backend/msg")  # <-- camb
 
 # 3. Registra i tipi custom
 for msg_file in msg_dir.glob("*.msg"):
-    print(f"Registrando tipo da: {msg_file}")
+    print(f"Registering type from: {msg_file}")
     typename = f"interfaces/msg/{msg_file.stem}"
     source = msg_file.read_text()
     typestore.register(get_types_from_msg(source, typename))
