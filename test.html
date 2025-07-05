@@ -40,8 +40,8 @@
   <label for="rosbag-id">Rosbag ID:</label>
   <input type="number" id="rosbag-id" min="1" style="width:4em"/>
   <button id="btn-detail-rosbag">Show Details</button>
+  <button id="btn-delete-rosbag">Cancella</button>
   <pre id="response" style="background:#f0f0f0; padding:1em;"></pre>
-  <pre id="response"></pre>
 
   <script>
     let authToken = null;
@@ -97,7 +97,7 @@
   formData.set('timestamp', new Date(timestampRaw).toISOString());
 
   try {
-    const res = await fetch('http://127.0.0.1:8000/api/upload/', {
+    const res = await fetch('http://127.0.0.1:8000/api/rosbags/upload/', {
       method: 'POST',
       headers: {
         'Authorization': 'Token ' + authToken
@@ -128,6 +128,7 @@
   } catch (err) {
     responsePre.textContent = 'Errore di rete: ' + err;
   }
+  });
 
   const BASE_URL_RB = 'http://127.0.0.1:8000/api/rosbags/';
 
@@ -198,6 +199,26 @@ async function getRosbagDetail(id) {
   }
 }
 
+async function deleteRosbag(id) {
+  try {
+    const res = await fetch(`${BASE_URL_RB}${id}/delete/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Token ' + authToken }
+    });
+
+    if (!res.ok) {
+      const bodyText = await res.text();
+      responsePre.textContent = `Errore ${res.status}:\n${bodyText}`;
+      return;
+    }
+
+    responsePre.textContent = `File rosbag con id: ${id}, eliminato con successo.`;
+
+  } catch (err) {
+    responsePre.textContent = 'Errore di rete:\n' + err;
+  }
+}
+
 // Listener sui bottoni
 document.getElementById('btn-list-rosbags').addEventListener('click', () => {
   if (!authToken) {
@@ -221,7 +242,19 @@ document.getElementById('btn-detail-rosbag').addEventListener('click', () => {
 });
 
 
+document.getElementById('btn-delete-rosbag').addEventListener('click', () => {
+  if (!authToken) {
+    responsePre.textContent = 'Effettua il login prima';
+    return;
+  }
+  const id = parseInt(document.getElementById('rosbag-id').value, 10);
+  if (!id) {
+    responsePre.textContent = 'Inserisci un ID valido';
+    return;
+  }
+  deleteRosbag(id);
 });
+
 
   </script>
 </body>

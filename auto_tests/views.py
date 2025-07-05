@@ -1,24 +1,25 @@
-from django.shortcuts import render
+# from django.shortcuts import render
 
 # views.py
-from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes, parser_classes # For creating API views
+from rest_framework.permissions import IsAuthenticated # For authentication and permissions
+from rest_framework.response import Response # For returning responses
+from rest_framework.parsers import MultiPartParser, FormParser # For handling file uploads
+from rest_framework import status # For HTTP status codes
 from .permissions import IsStaffUser # Import custom permission
-from .models import Rosbags
-from .serializers import RosbagSerializer
+from .models import Rosbags # Import the Rosbags model
+from .serializers import RosbagSerializer # Import the serializer for Rosbags
 from .rosbag_reader import RosbagReader  # Import the utility class to read rosbag files
 from .clean import clean_missing_files  # Import the cleaning function
 
 # Django REST framework API view to expose rosbag data as JSON
-from django.shortcuts import get_object_or_404
-from pathlib import Path
-from django.conf import settings
-from django.http import JsonResponse, FileResponse
-from django.core.files.base import ContentFile
-import json
+from django.shortcuts import get_object_or_404 # For retrieving objects
+from pathlib import Path # For handling file paths
+from django.conf import settings # For accessing settings
+from django.http import JsonResponse, FileResponse  # For file responses
+from django.core.files.base import ContentFile # For file handling
+import json # For JSON operations
+import shutil # For file operations
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -32,9 +33,34 @@ def rosbags_list(request):
 @permission_classes([IsAuthenticated, IsStaffUser])
 @parser_classes([MultiPartParser, FormParser])
 def delete_rosbag(request, pk):
-    rosbag = get_object_or_404(Rosbags, pk=pk)
-    rosbag.delete()
-    return Response({'message': f'Rosbag {pk} eliminato con successo'}, status=status.HTTP_204_NO_CONTENT)
+    rosbag = get_object_or_404(Rosbags, pk=int(pk))
+    
+    file_path = rosbag.db_file.path if rosbag.db_file else None
+
+    # # Cancella tutti i file associati (uno per uno)
+    # if rosbag.rosbag_file:
+    #     rosbag.rosbag_file.delete(save=False)
+
+    # if rosbag.yaml_file:
+    #     rosbag.yaml_file.delete(save=False)
+
+    # if rosbag.db_file:
+    #     rosbag.db_file.delete(save=False)
+
+    # if rosbag.json_file:
+    #     rosbag.json_file.delete(save=False)
+
+    if file_path:
+        folder = Path(file_path).parent  # qui usiamo pathlib
+        try:
+            shutil.rmtree(folder)
+
+            rosbag.delete()
+
+        except Exception as e:
+            Response({'message': f'Error while deleting Rosbag {pk}'}, status=status.HTTP_204_NO_CONTENT)
+
+    return Response({'message': f'Rosbag {pk} successfully deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['PUT', 'PATCH'])
 @permission_classes([IsAuthenticated, IsStaffUser])
@@ -85,10 +111,10 @@ def rosbag_json(request, pk):
         msg_path = Path(settings.BASE_DIR) / "msg"  # msg directory
 
         if not folder_path.exists():
-            return JsonResponse({"error": "Cartella rosbag non trovata"}, status=404)
+            return JsonResponse({"error": "rosbag folder not found"}, status=404)
         
         if not msg_path.exists():
-            return JsonResponse({"error": "Cartella msg non trovata"}, status=404)
+            return JsonResponse({"error": "msg folder not found"}, status=404)
         
         if settings.JSON_FIELD_ENCODED:
         # Se esiste file JSON nel db, ritorna il suo contenuto direttamente
@@ -128,10 +154,10 @@ def rosbag_json(request, pk):
             instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
 
         if not output_path.exists():
-            return Response({"error": "Errore nella conversione"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Error during conversion"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return FileResponse(open(output_path, 'rb'), as_attachment=True, filename=f'output_rosbag_{pk}.bag')
         # return JsonResponse(data, safe=False)
 
     except Exception as e:
-        return JsonResponse({"error": f"Errore lettura rosbag: {str(e)}"}, status=500)
+        return JsonResponse({"error": f"Error while reading: {str(e)}"}, status=500)

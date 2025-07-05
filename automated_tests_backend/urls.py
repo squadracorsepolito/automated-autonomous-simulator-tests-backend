@@ -23,9 +23,9 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/upload/', upload_rosbags),
-    path('api/<int:pk>/delete/', delete_rosbag, name='delete_rosbag'),
-    path('api/<int:pk>/update/', update_rosbag, name='update_rosbag'),
+    path('api/rosbags/upload/', upload_rosbags),
+    path('api/rosbags/<int:pk>/delete/', delete_rosbag, name='delete_rosbag'),
+    path('api/rosbags/<int:pk>/update/', update_rosbag, name='update_rosbag'),
     # path('api/upload/files', upload_files),
     path('api/rosbags/get_list/', rosbags_list),
     path('api/rosbags/<int:pk>/', rosbag_json, name='rosbag-json'),
