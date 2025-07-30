@@ -7,6 +7,7 @@ from django.conf import settings
 import json
 from .rosbag_reader import RosbagReader  # Import the utility class to read rosbag files
 from django.core.files.base import ContentFile
+from .utils import compress_full_data  # Import shared utility functions
 
 class RosbagSerializer(serializers.ModelSerializer):
     rosbag_file = serializers.FileField(required=False, allow_null=True)
@@ -35,10 +36,11 @@ class RosbagSerializer(serializers.ModelSerializer):
         reader = RosbagReader(folder_path, msg_path, custom_msgs)
         data = reader.extract_data()
 
-        # Serialize the data to JSON format
-        # Ensure that the data is serializable to JSON  
-        json_string = json.dumps(data, indent=4)
+        # Apply compression to reduce file size
+        compressed_data = compress_full_data(data)
 
+        # Serialize the compressed data to JSON format
+        json_string = json.dumps(compressed_data)
 
         return ContentFile(json_string)
 

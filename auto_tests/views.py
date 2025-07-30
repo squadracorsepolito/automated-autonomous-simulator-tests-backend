@@ -11,12 +11,14 @@ from .models import Rosbags
 from .serializers import RosbagSerializer
 from .rosbag_reader import RosbagReader  # Import the utility class to read rosbag files
 from .clean import clean_missing_files  # Import the cleaning function
+from .utils import compress_full_data  # Import shared utility functions
 
 # Django REST framework API view to expose rosbag data as JSON
 from django.shortcuts import get_object_or_404
 from pathlib import Path
 from django.conf import settings
 from django.http import JsonResponse
+from django.core.files.base import ContentFile
 import json
 
 @api_view(['GET'])
@@ -111,11 +113,14 @@ def rosbag_json(request, pk):
         reader = RosbagReader(folder_path, msg_path, custom_msgs)
         data = reader.extract_data()
 
-        # Salva il JSON nel campo json_file
-        # json_string = json.dumps(data, indent=4)
-        # instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
+        # Apply compression to reduce file size
+        compressed_data = compress_full_data(data)
 
-        return JsonResponse(data, safe=False)
+        # Salva il JSON compresso nel campo json_file
+        json_string = json.dumps(compressed_data)
+        instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
+
+        return JsonResponse(compressed_data, safe=False)
 
     except Exception as e:
         return JsonResponse({"error": f"Errore lettura rosbag: {str(e)}"}, status=500)
