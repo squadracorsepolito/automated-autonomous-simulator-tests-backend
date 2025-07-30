@@ -12,6 +12,7 @@ from .models import Rosbags # Import the Rosbags model
 from .serializers import RosbagSerializer # Import the serializer for Rosbags
 from .rosbag_reader import RosbagReader  # Import the utility class to read rosbag files
 from .clean import clean_missing_files  # Import the cleaning function
+from .utils import compress_full_data  # Import shared utility functions
 
 # Django REST framework API view to expose rosbag data as JSON
 from django.shortcuts import get_object_or_404 # For retrieving objects
@@ -153,22 +154,16 @@ def rosbag_json(request, pk):
         ]
 
         reader = RosbagReader(folder_path, msg_path, custom_msgs)
+        data = reader.extract_data()
 
-        output_path = reader.test_typestore(pk).resolve()  # Esegui il test del typestore
-        print(f"Output path: {output_path}")
+        # Apply compression to reduce file size
+        compressed_data = compress_full_data(data)
 
-        if settings.JSON_FIELD_ENCODED:
-            # Se JSON_FIELD_ENCODED è abilitato, usa il metodo json_serializer
-            data = reader.extract_data(pk)
-            # Salva il JSON nel campo json_file
-            json_string = json.dumps(data, indent=4)
-            instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
+        # Salva il JSON compresso nel campo json_file
+        json_string = json.dumps(compressed_data)
+        instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
 
-        if not output_path.exists():
-            return Response({"error": "Error during conversion"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return FileResponse(open(output_path, 'rb'), as_attachment=True, filename=f'output_rosbag_{pk}.bag')
-        # return JsonResponse(data, safe=False)
+        return JsonResponse(compressed_data, safe=False)
 
     except Exception as e:
         return JsonResponse({"error": f"Error while reading: {str(e)}"}, status=500)
