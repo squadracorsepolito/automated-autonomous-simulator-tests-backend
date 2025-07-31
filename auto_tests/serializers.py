@@ -5,6 +5,9 @@ import zipfile
 from pathlib import Path
 from django.conf import settings
 import json
+import shutil
+from django.db import transaction
+from rest_framework.exceptions import ValidationError
 from .rosbag_reader import RosbagReader  # Import the utility class to read rosbag files
 from django.core.files.base import ContentFile
 from .utils import compress_full_data  # Import shared utility functions
