@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.permissions import IsAuthenticated # For authentication and permissions
 from rest_framework.response import Response # For returning responses
 from rest_framework.parsers import MultiPartParser, FormParser # For handling file uploads
+from rest_framework.generics import ListAPIView # For generic list views
 from rest_framework import status # For HTTP status codes
 from .permissions import IsStaffUser # Import custom permission
 from .models import Rosbags # Import the Rosbags model
@@ -21,44 +22,41 @@ from django.core.files.base import ContentFile # For file handling
 import json # For JSON operations
 import shutil # For file operations
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def rosbags_list(request):
-    clean_missing_files()  # Clean up any missing files before listing
-    prodotti = Rosbags.objects.all()
-    serializer = RosbagSerializer(prodotti, many=True)
-    return Response(serializer.data)
+# View to list all Rosbags and clean up missing files
+class RosbagsListView(ListAPIView): # Class for listing Rosbags 
+    """
+    View to list all Rosbags with the ability to clean up missing files.   
+    """
+    # This view will return a paginated list of Rosbags
+    queryset = Rosbags.objects.all()
+    serializer_class = RosbagSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        clean_missing_files()  # Richiamiamo la funzione prima di restituire i dati
+        return super().get_queryset()
+
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsStaffUser])
 @parser_classes([MultiPartParser, FormParser])
 def delete_rosbag(request, pk):
+    """
+    Deletes a Rosbag instance and its associated files.
+    """
     rosbag = get_object_or_404(Rosbags, pk=int(pk))
     
-    file_path = rosbag.db_file.path if rosbag.db_file else None
-
-    # # Cancella tutti i file associati (uno per uno)
-    # if rosbag.rosbag_file:
-    #     rosbag.rosbag_file.delete(save=False)
-
-    # if rosbag.yaml_file:
-    #     rosbag.yaml_file.delete(save=False)
-
-    # if rosbag.db_file:
-    #     rosbag.db_file.delete(save=False)
-
-    # if rosbag.json_file:
-    #     rosbag.json_file.delete(save=False)
+    file_path = rosbag.db_file.path if rosbag.db_file else None  # Get the file path of the db_file if it exists
 
     if file_path:
-        folder = Path(file_path).parent  # qui usiamo pathlib
+        folder = Path(file_path).parent  # using pathlib
         try:
-            shutil.rmtree(folder)
+            shutil.rmtree(folder)  # Delete the entire folder containing the rosbag files
 
             rosbag.delete()
 
         except Exception as e:
-            Response({'message': f'Error while deleting Rosbag {pk}'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'message': f'Error while deleting Rosbag {pk}'}, status=status.HTTP_204_NO_CONTENT)
 
     return Response({'message': f'Rosbag {pk} successfully deleted'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -66,6 +64,10 @@ def delete_rosbag(request, pk):
 @permission_classes([IsAuthenticated, IsStaffUser])
 @parser_classes([MultiPartParser, FormParser])
 def update_rosbag(request, pk):
+    """
+    Updates a Rosbag instance with the provided data.
+    Supports both full updates (PUT) and partial updates (PATCH).
+    """
     rosbag = get_object_or_404(Rosbags, pk=pk)
     partial = request.method == 'PATCH'  # PATCH = aggiornamento parziale
 
@@ -79,6 +81,10 @@ def update_rosbag(request, pk):
 @permission_classes([IsAuthenticated, IsStaffUser])
 @parser_classes([MultiPartParser, FormParser])
 def upload_rosbags(request):
+    """
+    Uploads a new Rosbag instance with the provided data.
+    Expects a multipart/form-data request with the necessary files.
+    """
     serializer = RosbagSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -105,6 +111,11 @@ def upload_rosbags(request):
 @permission_classes([IsAuthenticated, IsStaffUser])
 @parser_classes([MultiPartParser, FormParser])
 def rosbag_json(request, pk):
+    """
+    Returns the JSON representation of a Rosbag instance.
+    If the JSON file is already stored in the database, it returns that.
+    Otherwise, it processes the rosbag file and generates the JSON.
+    """
     try:
         instance = get_object_or_404(Rosbags, pk=pk)
         folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
