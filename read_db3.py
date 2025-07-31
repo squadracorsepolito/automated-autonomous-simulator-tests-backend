@@ -3,7 +3,7 @@ from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore, get_types_from_msg
 
 # Path al tuo rosbag
-bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_22")
+bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_50")
 
 typestore = get_typestore(Stores.ROS2_FOXY)
 

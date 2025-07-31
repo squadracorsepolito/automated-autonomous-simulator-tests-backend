@@ -26,7 +26,7 @@
       </select>
     </label><br />
     <label>Rosbag File:
-    <input type="file" name="rosbag_file" />
+    <input type="file" name="zip_file" />
     <input type="file" name="yaml_file" />
     <input type="file" name="db_file" />
     </label><br />
@@ -40,8 +40,8 @@
   <label for="rosbag-id">Rosbag ID:</label>
   <input type="number" id="rosbag-id" min="1" style="width:4em"/>
   <button id="btn-detail-rosbag">Show Details</button>
+  <button id="btn-delete-rosbag">Cancella</button>
   <pre id="response" style="background:#f0f0f0; padding:1em;"></pre>
-  <pre id="response"></pre>
 
   <script>
     let authToken = null;
@@ -97,7 +97,7 @@
   formData.set('timestamp', new Date(timestampRaw).toISOString());
 
   try {
-    const res = await fetch('http://127.0.0.1:8000/api/upload/', {
+    const res = await fetch('http://127.0.0.1:8000/api/rosbags/upload/', {
       method: 'POST',
       headers: {
         'Authorization': 'Token ' + authToken
@@ -114,7 +114,7 @@
     }
 
     // Recupera lista aggiornata
-    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/get_list/', {
+    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/get_list/?page=1', {
       headers: {
         'Authorization': 'Token ' + authToken
       }
@@ -128,6 +128,7 @@
   } catch (err) {
     responsePre.textContent = 'Errore di rete: ' + err;
   }
+  });
 
   const BASE_URL_RB = 'http://127.0.0.1:8000/api/rosbags/';
 
@@ -166,25 +167,55 @@ async function getRosbagDetail(id) {
     const res = await fetch(`${BASE_URL_RB}${id}/`, {
       headers: { 'Authorization': 'Token ' + authToken }
     });
-    const bodyText = await res.text();
 
     if (!res.ok) {
+      const bodyText = await res.text();
       responsePre.textContent = `Errore ${res.status}:\n${bodyText}`;
       return;
     }
 
-    let jsonData;
-    try {
-      jsonData = JSON.parse(bodyText);
-    } catch (parseErr) {
-      responsePre.textContent = 'Risposta non JSON (detail):\n' + bodyText;
+    // Prendi nome file dalla Content-Disposition, se presente
+    const contentDisposition = res.headers.get('Content-Disposition');
+    const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] || `rosbag_${id}.bag`;
+
+    // Ottieni il contenuto come Blob
+    const blob = await res.blob();
+
+    // Crea link per scaricare il file
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    responsePre.textContent = `File rosbag ${filename} scaricato con successo.`;
+
+  } catch (err) {
+    responsePre.textContent = 'Errore di rete:\n' + err;
+  }
+}
+
+async function deleteRosbag(id) {
+  try {
+    const res = await fetch(`${BASE_URL_RB}${id}/delete/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Token ' + authToken }
+    });
+
+    if (!res.ok) {
+      const bodyText = await res.text();
+      responsePre.textContent = `Errore ${res.status}:\n${bodyText}`;
       return;
     }
 
-    responsePre.textContent = `Detail rosbag ${id}:\n` + JSON.stringify(jsonData, null, 2);
+    responsePre.textContent = `File rosbag con id: ${id}, eliminato con successo.`;
 
-  } catch (networkErr) {
-    responsePre.textContent = 'Errore di rete:\n' + networkErr;
+  } catch (err) {
+    responsePre.textContent = 'Errore di rete:\n' + err;
   }
 }
 
@@ -211,7 +242,19 @@ document.getElementById('btn-detail-rosbag').addEventListener('click', () => {
 });
 
 
+document.getElementById('btn-delete-rosbag').addEventListener('click', () => {
+  if (!authToken) {
+    responsePre.textContent = 'Effettua il login prima';
+    return;
+  }
+  const id = parseInt(document.getElementById('rosbag-id').value, 10);
+  if (!id) {
+    responsePre.textContent = 'Inserisci un ID valido';
+    return;
+  }
+  deleteRosbag(id);
 });
+
 
   </script>
 </body>

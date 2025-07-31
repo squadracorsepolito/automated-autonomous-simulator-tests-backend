@@ -4,7 +4,7 @@ def clean_missing_files():
     rosbags = Rosbags.objects.all()
     for r in rosbags:
         # Check if the associated file exists physically
-        if r.rosbag_file and not r.rosbag_file.storage.exists(r.rosbag_file.name):
+        if r.zip_file and not r.zip_file.storage.exists(r.zip_file.name):
             print(f"Missing file for Rosbag {r.id}, clearing the field")
-            r.rosbag_file = None
-            r.save(update_fields=['rosbag_file'])
+            r.zip_file = None
+            r.save(update_fields=['zip_file'])

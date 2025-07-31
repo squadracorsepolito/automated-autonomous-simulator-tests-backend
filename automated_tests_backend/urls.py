@@ -18,16 +18,16 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from auto_tests.views import rosbags_list, upload_rosbags, rosbag_json, delete_rosbag, update_rosbag
+from auto_tests.views import RosbagsListView, upload_rosbags, rosbag_json, delete_rosbag, update_rosbag
 from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/upload/', upload_rosbags),
-    path('api/<int:pk>/delete/', delete_rosbag, name='delete_rosbag'),
-    path('api/<int:pk>/update/', update_rosbag, name='update_rosbag'),
+    path('api/rosbags/upload/', upload_rosbags),
+    path('api/rosbags/<int:pk>/delete/', delete_rosbag, name='delete_rosbag'),
+    path('api/rosbags/<int:pk>/update/', update_rosbag, name='update_rosbag'),
     # path('api/upload/files', upload_files),
-    path('api/rosbags/get_list/', rosbags_list),
+    path('api/rosbags/get_list/', RosbagsListView.as_view(), name='rosbags-list'),
     path('api/rosbags/<int:pk>/', rosbag_json, name='rosbag-json'),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
