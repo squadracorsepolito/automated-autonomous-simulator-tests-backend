@@ -5,6 +5,9 @@ import zipfile
 from pathlib import Path
 from django.conf import settings
 import json
+import shutil
+from django.db import transaction
+from rest_framework.exceptions import ValidationError
 from .rosbag_reader import RosbagReader  # Import the utility class to read rosbag files
 from django.core.files.base import ContentFile
 from .utils import compress_full_data  # Import shared utility functions
@@ -27,12 +30,11 @@ class RosbagSerializer(serializers.ModelSerializer):
         yaml_file = data.get('yaml_file')
         db_file = data.get('db_file')
 
-        # CASE 1: rosbag_file is provided, yaml/db are not
-        if zip_file and not yaml_file and not db_file:
-            return data
+        #CASE 1 -> if zip file is present and yaml and db are not provided data would be taken from zip.
+        yaml_and_db = yaml_file and db_file                                 #CASE 2
+        nothing_provided = not zip_file and not yaml_file and not db_file   #CASE nothing provided
 
-        # CASE 2: yaml_file and db_file are provided
-        if yaml_file and db_file:
+        if zip_file or yaml_and_db or nothing_provided:
             return data
 
         # Invalid case: neither combination 1 nor 2
@@ -98,7 +100,7 @@ class RosbagSerializer(serializers.ModelSerializer):
             instance = Rosbags.objects.create(**validated_data)
 
             # --- CASE 1: ZIP provided AND yaml/db NOT provided ---
-            if zip_file and not yaml_file and not db_file:
+            if zip_file:
 
                 instance.zip_file.save(zip_file.name, zip_file, save=False)
                 instance.save(update_fields=["zip_file"])
@@ -150,12 +152,15 @@ class RosbagSerializer(serializers.ModelSerializer):
                         raise ValidationError("The extracted files do not contain the required yaml or db files.")
             # --- CASE 2: yaml/db provided (ZIP ignored) ---
             else:
-                if yaml_file:
+                if yaml_file and db_file:
                     instance.yaml_file.save(yaml_file.name, yaml_file, save=False)
-                if db_file:
                     instance.db_file.save(db_file.name, db_file, save=False)
-                instance.save(update_fields=['yaml_file', 'db_file'])
 
+                    instance.save(update_fields=['yaml_file', 'db_file'])
+                else: 
+                    #Check if the files are correctly uploaded
+                    raise ValidationError("The file required both yaml and db files.")
+    
             # Serialize the JSON data
             if instance.db_file and instance.yaml_file:
                 fields = []  # Fields to update in the instance
