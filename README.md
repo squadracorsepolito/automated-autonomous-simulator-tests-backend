@@ -33,9 +33,55 @@ This project is a Django-based backend for securely uploading and retrieving aut
 
 ## API Endpoints
 
-- `POST /api/upload/` – Upload race data and file (requires token)
-- `GET /api/list/` – Retrieve list of race results (requires token)
-- `POST /api-token-auth/` – Get token by passing credentials
+The API exposes the following endpoints for managing `Rosbag` instances:
+
+| Method | Endpoint                     | Description                                                                 |
+|--------|------------------------------|-----------------------------------------------------------------------------|
+| `GET`  | `/api/rosbags/`              | Returns a list of all rosbags. Automatically cleans up missing file entries. |
+| `POST` | `/api/rosbags/`              | Uploads a new rosbag (expects YAML and DB3 files). Triggers parsing + JSON creation. |
+| `PUT`  | `/api/rosbags/{pk}/`         | Fully updates an existing rosbag (requires all fields).                    |
+| `PATCH`| `/api/rosbags/{pk}/`         | Partially updates a rosbag (only specified fields are changed).            |
+| `DELETE`| `/api/rosbags/{pk}/`        | Deletes a rosbag and its associated files from the filesystem.             |
+| `GET`  | `/api/rosbags/{pk}/json/`    | Return the rosbag's JSON representation, or the ros1 file  (custom action).|
+
+---
+
+These endpoints are automatically generated using **Django REST Framework’s** `DefaultRouter` in combination with a `ModelViewSet`. Here's how:
+
+- The backend defines a `RosbagViewSet` class that inherits from `ModelViewSet`, providing all standard CRUD operations:
+  - `list`, `create`, `retrieve`, `update`, `partial_update`, `destroy`
+
+- The router registration looks like this:
+
+  ```python
+  from rest_framework.routers import DefaultRouter
+  from .views import RosbagViewSet
+
+  router = DefaultRouter()
+  router.register(r'rosbags', RosbagViewSet, basename='rosbags')
+    ```
+
+## Pagination
+
+The `GET /api/rosbags/` endpoint uses pagination by default, as defined by Django REST Framework settings.
+
+Paginated responses follow this structure:
+
+```json
+{
+  "count": 120,
+  "next": "http://localhost:8000/api/rosbags/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "track_name": "Test Track",
+      ...
+    },
+    ...
+  ]
+}
+```
 
 ## Test Page
 
@@ -62,3 +108,4 @@ python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser  # Optional
 python manage.py runserver
+```
