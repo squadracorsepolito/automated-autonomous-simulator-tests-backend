@@ -23,7 +23,7 @@ from .utils import compress_full_data
 
 
 class RosbagViewSet(ModelViewSet):
-    queryset = Rosbags.objects.all()
+    queryset = Rosbags.objects.all().order_by('-timestamp')
     serializer_class = RosbagSerializer
     permission_classes = [IsAuthenticated, IsStaffUser]
     parser_classes = [MultiPartParser, FormParser]
