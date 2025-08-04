@@ -100,7 +100,7 @@
 
   try {
 
-    const res = await fetch('http://127.0.0.1:8000/api/rosbags/upload/', {
+    const res = await fetch('http://127.0.0.1:8000/api/rosbags/', {
     // const res = await fetch(`http://127.0.0.1:8000/api/rosbags/${id}/update/`, {
       method: 'POST',
       headers: {
@@ -118,7 +118,7 @@
     }
 
     // Recupera lista aggiornata
-    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/get_list/?page=1', {
+    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/?page=1', {
       headers: {
         'Authorization': 'Token ' + authToken
       }
@@ -138,7 +138,7 @@
 
 async function listRosbags() {
   try {
-    const res = await fetch(BASE_URL_RB + 'get_list/', {
+    const res = await fetch(BASE_URL_RB + '?page=1', {
       headers: { 'Authorization': 'Token ' + authToken }
     });
     const bodyText = await res.text();
@@ -168,7 +168,7 @@ async function listRosbags() {
 
 async function getRosbagDetail(id) {
   try {
-    const res = await fetch(`${BASE_URL_RB}${id}/`, {
+    const res = await fetch(`${BASE_URL_RB}${id}/detail`, {
       headers: { 'Authorization': 'Token ' + authToken }
     });
 
@@ -205,7 +205,7 @@ async function getRosbagDetail(id) {
 
 async function deleteRosbag(id) {
   try {
-    const res = await fetch(`${BASE_URL_RB}${id}/delete/`, {
+    const res = await fetch(`${BASE_URL_RB}${id}/`, {
       method: 'DELETE',
       headers: { 'Authorization': 'Token ' + authToken }
     });
