@@ -61,6 +61,28 @@ These endpoints are automatically generated using **Django REST Framework’s** 
   router.register(r'rosbags', RosbagViewSet, basename='rosbags')
     ```
 
+## Pagination
+
+The `GET /api/rosbags/` endpoint uses pagination by default, as defined by Django REST Framework settings.
+
+Paginated responses follow this structure:
+
+```json
+{
+  "count": 120,
+  "next": "http://localhost:8000/api/rosbags/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "track_name": "Test Track",
+      ...
+    },
+    ...
+  ]
+}
+```
+
 ## Test Page
 
 Open `test.html` in your browser:
