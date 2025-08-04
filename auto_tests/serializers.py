@@ -29,7 +29,6 @@ class RosbagSerializer(serializers.ModelSerializer):
         #CASE 1 -> if zip file is present and yaml and db are not provided data would be taken from zip.
         yaml_and_db = yaml_file and db_file                                 #CASE 2
         nothing_provided = not zip_file and not yaml_file and not db_file   #CASE nothing provided
-        print(nothing_provided)
 
         if zip_file or yaml_and_db or nothing_provided:
             return data

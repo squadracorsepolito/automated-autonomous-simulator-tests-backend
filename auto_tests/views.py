@@ -41,7 +41,7 @@ class RosbagViewSet(ModelViewSet):
         instance.delete()
 
     @action(detail=True, methods=["get"], url_path="detail")
-    def get_json(self, request, pk=None):
+    def get_details(self, request, pk=None):
         """
         Custom action: GET /rosbags/{pk}/detail/
         Generates or returns cached JSON from rosbag data, or ros file
@@ -59,9 +59,11 @@ class RosbagViewSet(ModelViewSet):
             # If JSON already saved in DB, return it
             if settings.JSON_FIELD_ENCODED:
                 if instance.json_file and instance.json_file.storage.exists(instance.json_file.name):
-                    with instance.json_file.open("r") as f:
-                        data = f.read()
-                    return JsonResponse(json.loads(data), safe=False)
+                    # with instance.json_file.open("r") as f:
+                    #     data = f.read()
+                    # return JsonResponse(json.loads(data), safe=False)
+                    file_name = f"data_{pk}.json"
+                    return FileResponse(open(Path(folder_path / file_name), 'rb'),as_attachment=True, filename=file_name)
 
             # If rosbag exists, return the raw file
             if instance.rosbag_file and instance.rosbag_file.storage.exists(instance.rosbag_file.name):
@@ -84,9 +86,11 @@ class RosbagViewSet(ModelViewSet):
 
             # Save JSON file to DB
             json_string = json.dumps(compressed_data)
-            instance.json_file.save(f"data_{pk}.json", ContentFile(json_string), save=True)
+            file_name = f"data_{pk}.json"
+            instance.json_file.save(file_name, ContentFile(json_string), save=True)
 
-            return JsonResponse(compressed_data, safe=False)
+            # return JsonResponse(compressed_data, safe=False)
+            return FileResponse(open(Path(folder_path / file_name), 'rb'),as_attachment=True, filename=file_name)
 
         except Exception as e:
             return JsonResponse({"error": f"Error while reading: {str(e)}"}, status=500)
