@@ -29,6 +29,7 @@ class RosbagSerializer(serializers.ModelSerializer):
         #CASE 1 -> if zip file is present and yaml and db are not provided data would be taken from zip.
         yaml_and_db = yaml_file and db_file                                 #CASE 2
         nothing_provided = not zip_file and not yaml_file and not db_file   #CASE nothing provided
+        print(nothing_provided)
 
         if zip_file or yaml_and_db or nothing_provided:
             return data
@@ -154,9 +155,10 @@ class RosbagSerializer(serializers.ModelSerializer):
                     instance.db_file.save(db_file.name, db_file, save=False)
 
                     instance.save(update_fields=['yaml_file', 'db_file'])
-                else: 
-                    #Check if the files are correctly uploaded
-                    raise ValidationError("The file required both yaml and db files.")
+                # This part of code raise error if you do not provide anything
+                # else: 
+                #     #Check if the files are correctly uploaded
+                #     raise ValidationError("The file required both yaml and db files.")
     
             # Serialize the JSON data
             if instance.db_file and instance.yaml_file:
