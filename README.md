@@ -63,14 +63,27 @@ These endpoints are automatically generated using **Django REST Framework’s** 
 
 ## Pagination
 
-The `GET /api/rosbags/` endpoint uses pagination by default, as defined by Django REST Framework settings.
+The `GET /api/rosbags/` endpoint uses **pagination by default**, as configured in the Django REST Framework settings.
 
-Paginated responses follow this structure:
+### - Page size is customizable
+
+You can control how many items are returned per page by passing the optional `page_size` query parameter:
+
+- `GET /api/rosbags/` – returns the **first page** with the **default page size** (e.g., 10 items)
+- `GET /api/rosbags/?page=2` – returns the **second page**
+- `GET /api/rosbags/?page_size=20` – returns the **first page with 20 items**
+- `GET /api/rosbags/?page=3&page_size=15` – returns **page 3**, **15 items per page**
+
+> A maximum limit (`max_page_size`) may apply to prevent performance issues.
+
+---
+
+The response format includes metadata about the pagination:
 
 ```json
 {
   "count": 120,
-  "next": "http://localhost:8000/api/rosbags/?page=2",
+  "next": "http://localhost:8000/api/rosbags/?page=2&page_size=10",
   "previous": null,
   "results": [
     {
