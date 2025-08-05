@@ -118,7 +118,7 @@
     }
 
     // Recupera lista aggiornata
-    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/?page=1', {
+    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/?page=1&page_size=15', {
       headers: {
         'Authorization': 'Token ' + authToken
       }
@@ -138,7 +138,7 @@
 
 async function listRosbags() {
   try {
-    const res = await fetch(BASE_URL_RB + '?page=1', {
+    const res = await fetch(BASE_URL_RB + '?page=1&page_size=15', {
       headers: { 'Authorization': 'Token ' + authToken }
     });
     const bodyText = await res.text();
