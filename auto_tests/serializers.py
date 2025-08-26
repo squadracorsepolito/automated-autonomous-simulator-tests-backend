@@ -22,6 +22,9 @@ class RosbagSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, data):
+        """
+        Validate the input data for the RosbagSerializer.
+        """
         zip_file = data.get('zip_file')
         yaml_file = data.get('yaml_file')
         db_file = data.get('db_file')
@@ -39,6 +42,9 @@ class RosbagSerializer(serializers.ModelSerializer):
         )
 
     def json_serializer(self, pk):
+        """
+        Serialize the rosbag data for a given primary key.
+        """
         folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
         msg_path = Path(settings.BASE_DIR) / "msg"
 
@@ -65,6 +71,10 @@ class RosbagSerializer(serializers.ModelSerializer):
         return ContentFile(json_string)
     
     def rosbag_serializer(self, pk):
+        """
+        Serialize the rosbag data for a given primary key.
+        """
+
         folder_path = Path(settings.MEDIA_ROOT) / "rosbags" / f"test_{pk}"
         msg_path = Path(settings.BASE_DIR) / "msg"
 
@@ -85,6 +95,9 @@ class RosbagSerializer(serializers.ModelSerializer):
         return output_path
 
     def create(self, validated_data):
+        """
+        Create a new Rosbags instance.
+        """
         # Extract files from validated_data, if present
         yaml_file = validated_data.pop('yaml_file', None)
         db_file = validated_data.pop('db_file', None)
@@ -154,10 +167,7 @@ class RosbagSerializer(serializers.ModelSerializer):
                     instance.db_file.save(db_file.name, db_file, save=False)
 
                     instance.save(update_fields=['yaml_file', 'db_file'])
-                # This part of code raise error if you do not provide anything
-                # else: 
-                #     #Check if the files are correctly uploaded
-                #     raise ValidationError("The file required both yaml and db files.")
+
     
             # Serialize the JSON data
             if instance.db_file and instance.yaml_file:
@@ -177,7 +187,7 @@ class RosbagSerializer(serializers.ModelSerializer):
                 # Use the rosbag_serializer to get the path of the ROS bag file
                 rosbag_path = str(self.rosbag_serializer(instance.pk)) # Get the path
                 if f"output_rosbag_{instance.pk}.bag" in rosbag_path: # Name the ROS file
-                    instance.rosbag_file.name = rosbag_path  # solo il path relativo al MEDIA_ROOT
+                    instance.rosbag_file.name = rosbag_path  # path relative to MEDIA_ROOT only
                 
                 instance.save(update_fields=fields) # Save the instance with the new JSON file
 

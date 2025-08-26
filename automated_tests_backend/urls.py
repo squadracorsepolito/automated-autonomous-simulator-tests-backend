@@ -14,23 +14,6 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-# from django.contrib import admin
-# from django.urls import path
-# from django.conf import settings
-# from django.conf.urls.static import static
-# from auto_tests.views import RosbagsListView, upload_rosbags, rosbag_json, delete_rosbag, update_rosbag
-# from rest_framework.authtoken.views import obtain_auth_token
-# 
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     path('api/rosbags/upload/', upload_rosbags),
-#     path('api/rosbags/<int:pk>/delete/', delete_rosbag, name='delete_rosbag'),
-#     path('api/rosbags/<int:pk>/update/', update_rosbag, name='update_rosbag'),
-#     # path('api/upload/files', upload_files),
-#     path('api/rosbags/get_list/', RosbagsListView.as_view(), name='rosbags-list'),
-#     path('api/rosbags/<int:pk>/', rosbag_json, name='rosbag-json'),
-#     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
-# ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 from django.contrib import admin
 from rest_framework.authtoken.views import obtain_auth_token
@@ -38,9 +21,13 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from auto_tests.views import RosbagViewSet
 
+# Create a router and register our viewset with it.
 router = DefaultRouter()
 router.register(r'rosbags', RosbagViewSet, basename='rosbag')
 
+# The API URLs are now routed through the router.
+# The `basename` argument is used to create a base name for the URL patterns.
+# This allows for easier reverse URL matching.
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-token-auth/', obtain_auth_token, name='api_token_auth'),

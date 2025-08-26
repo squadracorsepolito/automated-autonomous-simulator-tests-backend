@@ -8,7 +8,7 @@ class RosbagReader:
         self.bag_path = bag_path
         self.typestore = get_typestore(Stores.ROS2_HUMBLE)
 
-        # Registro tipi custom
+        # Registering custom types
         for msg_name in custom_msgs:
             msg_file = msg_path / f"{msg_name}.msg"
             msg_def = msg_file.read_text()
@@ -16,6 +16,9 @@ class RosbagReader:
             self.typestore.register(types)
 
     def test_typestore(self, pk: int = 1):
+        """ 
+        Convert the rosbag to ROS1 Noetic format using a custom typestore.
+        """
         from rosbags.convert.commands import command
 
         dst = Path(self.bag_path / f"output_rosbag_{pk}.bag")
@@ -33,13 +36,11 @@ class RosbagReader:
                 return ("Error during conversion: " + str(result))
             else:
                 
-                # path assoluto della cartella media
+                # absolute path of the media folder
                 media_path = Path("media").resolve()
-                print(f"Media path: {media_path}")
 
-                # path relativo a media/
+                # relative path to media/
                 dst = dst.relative_to(media_path)
-                # print(f"Converted rosbag saved at: {dst}")
 
                 return dst
             
@@ -48,6 +49,9 @@ class RosbagReader:
 
 
     def extract_data(self, max_messages=100, sample_step: int = 1):
+        """
+        Extract data from the rosbag file.
+        """
         data = []
         allowed_topics = {
             "/vehicle_state_optimized",
@@ -90,7 +94,7 @@ class RosbagReader:
                 try:
                     msg = self.typestore.deserialize_cdr(rawdata, conn.msgtype)
                 except Exception:
-                    # Ignora messaggi non deserializzabili
+                    # Ignore non-deserializable messages
                     continue
 
                 if conn.topic == "/vehicle_state_optimized":
@@ -101,7 +105,7 @@ class RosbagReader:
                     json_data["yaw_r"] = getattr(msg, "yaw_r", "")
 
                     if count % sample_step == 0:
-                        # Aggiungi solo ogni sample_step messaggio
+                        # Add only every sample_step message
                         data.append(copy.deepcopy(json_data))
 
 
@@ -143,6 +147,4 @@ class RosbagReader:
                 
                 count += 1
 
-                # if count >= max_messages:
-                #     break
         return data
