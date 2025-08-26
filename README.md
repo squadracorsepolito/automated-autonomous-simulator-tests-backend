@@ -42,7 +42,7 @@ The API exposes the following endpoints for managing `Rosbag` instances:
 | `PUT`  | `/api/rosbags/{pk}/`         | Fully updates an existing rosbag (requires all fields).                    |
 | `PATCH`| `/api/rosbags/{pk}/`         | Partially updates a rosbag (only specified fields are changed).            |
 | `DELETE`| `/api/rosbags/{pk}/`        | Deletes a rosbag and its associated files from the filesystem.             |
-| `GET`  | `/api/rosbags/{pk}/json/`    | Return the rosbag's JSON representation, or the ros1 file  (custom action).|
+| `GET`  | `/api/rosbags/{pk}/detail/`    | Return the rosbag's JSON representation, or the ros1 file  (custom action).|
 
 ---
 
