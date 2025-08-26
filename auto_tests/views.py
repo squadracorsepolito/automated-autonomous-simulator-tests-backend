@@ -82,9 +82,9 @@ class RosbagViewSet(ModelViewSet):
             ]
 
             reader = RosbagReader(folder_path, msg_path, custom_msgs)
-            data = reader.extract_data()
             
             if file_type == "json":
+                data = reader.extract_data()
                 compressed_data = compress_full_data(data)
                 # Save JSON file to DB
                 json_string = json.dumps(compressed_data)
@@ -93,6 +93,8 @@ class RosbagViewSet(ModelViewSet):
         
             elif file_type == "ros":
                 file_name = f"output_rosbag_{pk}.bag"
+                # Save ROS bag file to DB
+                reader.test_typestore(pk)
                 instance.rosbag_file.save(file_name, ContentFile(data), save=True)
 
             # return JsonResponse(compressed_data, safe=False)

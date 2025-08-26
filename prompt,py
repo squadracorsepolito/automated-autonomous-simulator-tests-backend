@@ -1,6 +1,6 @@
 # from rosbags.rosbag2 import Reader
 
-path = "C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_1/"
+path = "C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_69/"
 types_paths = "C:/Users/aless/Desktop/automated-tests-backend/msg"
 # try:
 #     with Reader(path) as reader:
@@ -40,7 +40,8 @@ from pathlib import Path
 
 from rosbags.rosbag1 import Reader as Rosbag1Reader
 
-value = 50
+max_messages = 1000
+value = 69
 output_path = Path(f"C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_{value}/output_rosbag_{value}.bag")
 # path = 'output_rosbag1.bag'
 
@@ -54,6 +55,6 @@ with Rosbag1Reader(output_path) as reader:
     for connection, timestamp, data in reader.messages():
         print(f"Topic: {connection.topic}, Timestamp: {timestamp}")
         count += 1
-        if count >= 5:
+        if count >= max_messages:
             break
     print(f"Messaggi rosbag2 letti: {count}")
