@@ -65,12 +65,12 @@ class RosbagViewSet(ModelViewSet):
                     file_name = f"data_{pk}.json"
                     return FileResponse(open(Path(folder_path / file_name), 'rb'),as_attachment=True, filename=file_name)
 
-            # If rosbag exists, return the raw file
             if instance.rosbag_file and instance.rosbag_file.storage.exists(instance.rosbag_file.name):
+                # if the rosbag file exists, return it
                 file_name = f"output_rosbag_{pk}.bag"
                 return FileResponse(open(Path(folder_path / file_name), 'rb'), as_attachment=True, filename=file_name)
 
-            # Otherwise, parse rosbag
+            # Otherwise create the JSON with the RosbagReader
             custom_msgs = [
                 "State",
                 "ConeArray",
@@ -80,8 +80,11 @@ class RosbagViewSet(ModelViewSet):
                 "VehicleState",
                 "VehicleCmd",
             ]
+
             reader = RosbagReader(folder_path, msg_path, custom_msgs)
             data = reader.extract_data()
+
+            # Apply compression to reduce file size
             compressed_data = compress_full_data(data)
 
             # Save JSON file to DB
