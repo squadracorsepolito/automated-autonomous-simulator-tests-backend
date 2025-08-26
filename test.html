@@ -168,7 +168,7 @@ async function listRosbags() {
 
 async function getRosbagDetail(id) {
   try {
-    const res = await fetch(`${BASE_URL_RB}${id}/detail`, {
+    const res = await fetch(`${BASE_URL_RB}${id}/json`, {
       headers: { 'Authorization': 'Token ' + authToken }
     });
 

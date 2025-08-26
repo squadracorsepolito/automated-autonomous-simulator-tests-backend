@@ -40,11 +40,11 @@ class RosbagViewSet(ModelViewSet):
                 shutil.rmtree(folder)
         instance.delete()
 
-    @action(detail=True, methods=["get"], url_path="detail")
-    def get_details(self, request, pk=None):
+    @action(detail=True, methods=["get"],  url_path=r"(?P<file_type>json|ros)")
+    def get_details(self, request, pk=None, file_type=None):
         """
-        Custom action: GET /rosbags/{pk}/detail/
-        Generates or returns cached JSON from rosbag data, or ros file
+        Custom action: GET /rosbags/{pk}/json/ or /rosbags/{pk}/ros/
+        Generates or returns cached JSON from rosbag data, or ROS file
         """
         try:
             instance = self.get_object()
@@ -57,18 +57,18 @@ class RosbagViewSet(ModelViewSet):
                 return JsonResponse({"error": "msg folder not found"}, status=404)
 
             # If JSON already saved in DB, return it
-            if settings.JSON_FIELD_ENCODED:
+            if file_type == "json":
                 if instance.json_file and instance.json_file.storage.exists(instance.json_file.name):
                     # with instance.json_file.open("r") as f:
                     #     data = f.read()
                     # return JsonResponse(json.loads(data), safe=False)
                     file_name = f"data_{pk}.json"
                     return FileResponse(open(Path(folder_path / file_name), 'rb'),as_attachment=True, filename=file_name)
-
-            if instance.rosbag_file and instance.rosbag_file.storage.exists(instance.rosbag_file.name):
-                # if the rosbag file exists, return it
-                file_name = f"output_rosbag_{pk}.bag"
-                return FileResponse(open(Path(folder_path / file_name), 'rb'), as_attachment=True, filename=file_name)
+            elif file_type == "ros":
+                # If rosbag exists, return the raw file
+                if instance.rosbag_file and instance.rosbag_file.storage.exists(instance.rosbag_file.name):
+                    file_name = f"output_rosbag_{pk}.bag"
+                    return FileResponse(open(Path(folder_path / file_name), 'rb'), as_attachment=True, filename=file_name)
 
             # Otherwise create the JSON with the RosbagReader
             custom_msgs = [
@@ -83,14 +83,17 @@ class RosbagViewSet(ModelViewSet):
 
             reader = RosbagReader(folder_path, msg_path, custom_msgs)
             data = reader.extract_data()
-
-            # Apply compression to reduce file size
-            compressed_data = compress_full_data(data)
-
-            # Save JSON file to DB
-            json_string = json.dumps(compressed_data)
-            file_name = f"data_{pk}.json"
-            instance.json_file.save(file_name, ContentFile(json_string), save=True)
+            
+            if file_type == "json":
+                compressed_data = compress_full_data(data)
+                # Save JSON file to DB
+                json_string = json.dumps(compressed_data)
+                file_name = f"data_{pk}.json"
+                instance.json_file.save(file_name, ContentFile(json_string), save=True)
+        
+            elif file_type == "ros":
+                file_name = f"output_rosbag_{pk}.bag"
+                instance.rosbag_file.save(file_name, ContentFile(data), save=True)
 
             # return JsonResponse(compressed_data, safe=False)
             return FileResponse(open(Path(folder_path / file_name), 'rb'),as_attachment=True, filename=file_name)
