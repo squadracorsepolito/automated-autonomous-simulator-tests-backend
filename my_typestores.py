@@ -5,7 +5,8 @@ from rosbags.typesys import get_types_from_msg, get_typestore, Stores
 typestore = get_typestore(Stores.ROS2_HUMBLE)
 
 # 2. Path ai tuoi file .msg
-msg_dir = Path("C:/Users/aless/Desktop/automated-tests-backend/msg")  # <-- cambia se necessario
+relative_dir = Path("msg") # <-- cambia se necessario
+msg_dir = relative_dir.resolve()
 
 # 3. Registra i tipi custom
 for msg_file in msg_dir.glob("*.msg"):

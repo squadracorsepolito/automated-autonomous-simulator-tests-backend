@@ -41,6 +41,7 @@
   <input type="number" id="rosbag-id" min="1" style="width:4em"/>
   <button id="btn-detail-rosbag">Show Details</button>
   <button id="btn-delete-rosbag">Cancella</button>
+  <!-- <button id="btn-update-rosbag">Aggiorna</button> -->
   <pre id="response" style="background:#f0f0f0; padding:1em;"></pre>
 
   <script>
@@ -96,8 +97,11 @@
   const timestampRaw = raceResultForm.timestamp.value;
   formData.set('timestamp', new Date(timestampRaw).toISOString());
 
+
   try {
-    const res = await fetch('http://127.0.0.1:8000/api/rosbags/upload/', {
+
+    const res = await fetch('http://127.0.0.1:8000/api/rosbags/', {
+    // const res = await fetch(`http://127.0.0.1:8000/api/rosbags/${id}/update/`, {
       method: 'POST',
       headers: {
         'Authorization': 'Token ' + authToken
@@ -114,7 +118,7 @@
     }
 
     // Recupera lista aggiornata
-    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/get_list/?page=1', {
+    const listRes = await fetch('http://127.0.0.1:8000/api/rosbags/?page=1&page_size=15', {
       headers: {
         'Authorization': 'Token ' + authToken
       }
@@ -134,7 +138,7 @@
 
 async function listRosbags() {
   try {
-    const res = await fetch(BASE_URL_RB + 'get_list/', {
+    const res = await fetch(BASE_URL_RB + '?page=1&page_size=15', {
       headers: { 'Authorization': 'Token ' + authToken }
     });
     const bodyText = await res.text();
@@ -164,7 +168,7 @@ async function listRosbags() {
 
 async function getRosbagDetail(id) {
   try {
-    const res = await fetch(`${BASE_URL_RB}${id}/`, {
+    const res = await fetch(`${BASE_URL_RB}${id}/detail`, {
       headers: { 'Authorization': 'Token ' + authToken }
     });
 
@@ -201,7 +205,7 @@ async function getRosbagDetail(id) {
 
 async function deleteRosbag(id) {
   try {
-    const res = await fetch(`${BASE_URL_RB}${id}/delete/`, {
+    const res = await fetch(`${BASE_URL_RB}${id}/`, {
       method: 'DELETE',
       headers: { 'Authorization': 'Token ' + authToken }
     });
@@ -255,6 +259,18 @@ document.getElementById('btn-delete-rosbag').addEventListener('click', () => {
   deleteRosbag(id);
 });
 
+// document.getElementById('btn-update-rosbag').addEventListener('click', () => {
+//   if (!authToken) {
+//     responsePre.textContent = 'Effettua il login prima';
+//     return;
+//   }
+//   const id = parseInt(document.getElementById('rosbag-id').value, 10);
+//   if (!id) {
+//     responsePre.textContent = 'Inserisci un ID valido';
+//     return;
+//   }
+//   updateRosbag(id);
+// });
 
   </script>
 </body>

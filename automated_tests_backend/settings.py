@@ -52,7 +52,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'auto_tests.pagination.CustomPageNumberPagination',
     'PAGE_SIZE': 10  # number of items per page in pagination
 }
 
@@ -104,7 +104,7 @@ else:
         }
     }
 
-JSON_FIELD_ENCODED = False  # Enable JSON field encoding for PostgreSQL
+JSON_FIELD_ENCODED = True  # Enable JSON field encoding for PostgreSQL
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
