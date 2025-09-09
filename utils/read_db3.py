@@ -2,13 +2,16 @@ from pathlib import Path
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore, get_types_from_msg
 
+id_test = 69
+
 # Path al tuo rosbag
-bag_path = Path("C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_50")
+BASE_DIR = Path().resolve() 
+bag_path = BASE_DIR / f"media/rosbags/test_{id_test}"
 
 typestore = get_typestore(Stores.ROS2_FOXY)
 
 # Registrazione tipi custom (se serve)
-msg_path = Path('C:/Users/aless/Desktop/automated-tests-backend/msg/')
+msg_path = BASE_DIR / "msg/"
 # Lista tipi custom da registrare
 custom_msgs = [
     "State",
