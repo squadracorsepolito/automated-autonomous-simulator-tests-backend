@@ -1,7 +1,14 @@
 # from rosbags.rosbag2 import Reader
+from pathlib import Path
 
-path = "C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_69/"
-types_paths = "C:/Users/aless/Desktop/automated-tests-backend/msg"
+id_test = 69
+
+# 2. Path ai tuoi file .msg
+BASE_DIR = Path().resolve() # <-- cambia se necessario
+
+path = Path(BASE_DIR / f"media/rosbags/test_{id_test}/")
+types_paths = Path(BASE_DIR / "msg")
+
 # try:
 #     with Reader(path) as reader:
 #         print(f"Found {len(reader.connections)} connections (topics)")
@@ -41,8 +48,7 @@ from pathlib import Path
 from rosbags.rosbag1 import Reader as Rosbag1Reader
 
 max_messages = 1000
-value = 69
-output_path = Path(f"C:/Users/aless/Desktop/automated-tests-backend/media/rosbags/test_{value}/output_rosbag_{value}.bag")
+output_path = BASE_DIR / f"media/rosbags/test_{id_test}/output_rosbag_{id_test}.bag"
 # path = 'output_rosbag1.bag'
 
 with Rosbag1Reader(output_path) as reader:
