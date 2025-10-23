@@ -193,5 +193,13 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-media/
+# ignora tutto in media/test
+media/rosbags/*
+
+# tranne questo file
+!media/rosbags/test_67
+
+#Rimuoviendo cartella di test
+media/test/*
+
 .zip
