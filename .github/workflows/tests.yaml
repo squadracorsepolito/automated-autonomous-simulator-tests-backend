@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DJANGO_SETTINGS_MODULE: automated_tests_backend.settings  # 👈 cambia con il tuo modulo settings
+      DJANGO_SETTINGS_MODULE: automated_tests_backend.settings
       SECRET_KEY: dummy_secret
       DEBUG: "0"
 
