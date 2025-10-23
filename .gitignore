@@ -193,6 +193,10 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-media/rosbags
-media/temp_zips
+# ignora tutto in media/test
+media/rosbags/*
+
+# tranne questo file
+!media/rosbags/test_67   
+# media/temp_zips
 .zip
