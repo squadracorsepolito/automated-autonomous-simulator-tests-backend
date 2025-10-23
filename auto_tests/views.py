@@ -32,12 +32,44 @@ class RosbagViewSet(ModelViewSet):
         clean_missing_files()
         return super().get_queryset()
 
+    # def perform_destroy(self, instance):
+    #     """Override default delete to also remove associated files"""
+    #     if instance.db_file or instance.rosbag_file or instance.yaml_file or instance.json_file:
+    #         folder = Path(instance.db_file.path).parent
+    #         if folder.exists():
+    #             shutil.rmtree(folder)
+    #     instance.delete()
+
     def perform_destroy(self, instance):
-        """Override default delete to also remove associated files"""
-        if instance.db_file:
-            folder = Path(instance.db_file.path).parent
-            if folder.exists():
-                shutil.rmtree(folder)
+        """
+        Delete Rosbag instance and its folder safely.
+        Works even if some files are missing or aperti.
+        """
+        folder = None
+
+        # Search for folder from existing files
+        for f in [instance.rosbag_file, instance.json_file, instance.db_file]:
+            if f and hasattr(f, "path"):
+                folder = Path(f.path).parent
+                break
+
+        # If not found, build folder by convention
+        if not folder:
+            folder = Path(settings.MEDIA_ROOT) / f"rosbags/test_{instance.id}"
+
+        # Close any open files (on Windows this can block rmtree)
+        for f in [instance.rosbag_file, instance.json_file, instance.db_file]:
+            if f and hasattr(f, "close"):
+                try:
+                    f.close()
+                except Exception:
+                    pass
+
+        # Delete the folder (ignore errors)
+        if folder.exists():
+            shutil.rmtree(folder, ignore_errors=True)
+
+        # Delete the object from the DB
         instance.delete()
 
     @action(detail=True, methods=["get"],  url_path=r"(?P<file_type>json|ros)")

@@ -1,49 +1,23 @@
-from django.test import TestCase, Client
-from django.contrib.auth.models import User
-from rest_framework.authtoken.models import Token
+from django.test import Client
 from pathlib import Path
-from auto_tests.models import Rosbags
-from automated_tests_backend import settings
+from auto_tests.tests.base import BaseRosbagTest
 
-class RosbagDownloadTest(TestCase):
+
+class RosbagDownloadTest(BaseRosbagTest):
+
     def setUp(self):
-        relative_dir = Path("media/rosbags/test_67")
-        msg_dir = relative_dir.resolve()    
-        print(f"Using media directory: {msg_dir}")
-
-        # Create a test user
-        self.user = User.objects.create_user(username='testuser', password='12345')
-        self.user.is_staff = True  # if the view requires admin
-        self.user.save()
-
-        # Generate the token
-        self.token, _ = Token.objects.get_or_create(user=self.user)
         self.client = Client(HTTP_AUTHORIZATION=f'Token {self.token.key}')
 
-        # Test file paths
+        # Create a simple media folder for the test (keeps legacy behavior)
+        self.folder_path = Path("media/rosbags/test_67").resolve()
+        self.folder_path.mkdir(parents=True, exist_ok=True)
+
         self.json_file_name = 'data_67.json'
         self.rosbag_file_name = 'output_rosbag_67.bag'
-        self.folder_path = msg_dir
 
-        # Create a test file if it doesn't exist
+        # Create placeholder files if they don't exist
         (self.folder_path / self.json_file_name).touch(exist_ok=True)
         (self.folder_path / self.rosbag_file_name).touch(exist_ok=True)
-
-        # COMMENT THIS LINE TO WORK ONLY WITH ROSBAG
-        settings.JSON_FIELD_ENCODED = False
-
-        self.rosbag = Rosbags.objects.create(
-            id=67,
-            track_name="TestTrack",
-            mission_name="TestMission",
-            avg_lap_time=10.0,
-            rosbag_file=f'rosbags/test_67/{self.rosbag_file_name}',
-            json_file=f'rosbags/test_67/{self.json_file_name}',
-        )
-        print(f"ID Rosbag creato: {self.rosbag.id}")
-        print(f"Rosbag creato: {self.rosbag.rosbag_file}")
-        print(f"File JSON creato: {self.rosbag.json_file}")
-        print("\n\n")
 
 
     def test_download_rosbag(self):

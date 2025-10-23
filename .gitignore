@@ -197,6 +197,9 @@ cython_debug/
 media/rosbags/*
 
 # tranne questo file
-!media/rosbags/test_67   
-media/test
+!media/rosbags/test_67
+
+#Rimuoviendo cartella di test
+media/test/*
+
 .zip
