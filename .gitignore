@@ -198,5 +198,5 @@ media/rosbags/*
 
 # tranne questo file
 !media/rosbags/test_67   
-# media/temp_zips
+media/test
 .zip
