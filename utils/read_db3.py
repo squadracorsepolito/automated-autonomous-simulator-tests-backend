@@ -29,6 +29,17 @@ for msg_name in custom_msgs:
     types = get_types_from_msg(msg_def, f"interfaces/msg/{msg_name}")
     typestore.register(types)
 
+allowed_topics = (
+    "vehicle_state_optimized",
+    "vehicle_state_measure",
+    "vehicle_cmd",
+    "state",
+    "lap",
+    "map",
+    "active_cones",
+    "global_trajectory",
+    "predicted_trajectory",
+)
 
 json_data = {
     "x": "",
@@ -51,6 +62,8 @@ json_data = {
 
 with Reader(bag_path) as reader:
     for conn, timestamp, rawdata in reader.messages():
+
+        print(conn.topic.endswith(allowed_topics))
         msg = typestore.deserialize_cdr(rawdata, conn.msgtype)
         
         if conn.topic == "/vehicle_state_optimized":
@@ -59,7 +72,7 @@ with Reader(bag_path) as reader:
             json_data["yaw"] = getattr(msg, "yaw", "")
             json_data["v_y"] = getattr(msg, "v_y", "")
             json_data["yaw_r"] = getattr(msg, "yaw_r", "")
-            print(json_data)
+            # print(json_data)
         
         elif conn.topic == "/vehicle_state_measure":
             json_data["s"] = getattr(msg, "s", "")
