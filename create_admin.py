@@ -1,5 +1,9 @@
 import os
+from dotenv import load_dotenv
 import django
+
+# Load environment variables from .env file
+load_dotenv()
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "automated_tests_backend.settings")
 django.setup()

@@ -1,6 +1,8 @@
 asgiref==3.8.1
 Django==5.2.3
+dj-database-url==2.1.0
 django-cors-headers==4.7.0
+python-dotenv==1.0.1
 djangorestframework==3.16.0
 lz4==4.4.4
 numpy==2.3.1
