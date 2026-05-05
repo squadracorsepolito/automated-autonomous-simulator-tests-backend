@@ -120,6 +120,48 @@ source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
-python manage.py createsuperuser  # Optional
+python create_admin.py  # Creates admin user from .env
 python manage.py runserver
 ```
+
+### Environment Variables
+
+Before running the project, create a `.env` file in the root directory:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your local configuration:
+
+```env
+# Django Settings
+DJANGO_DEBUG=False
+DJANGO_SECRET_KEY=your-secret-key-here-change-in-production
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database (optional - if using local database)
+DATABASE_URL=sqlite:///db.sqlite3
+
+# Admin User Credentials
+DJANGO_ADMIN_USERNAME=admin
+DJANGO_ADMIN_EMAIL=admin@example.com
+DJANGO_ADMIN_PASSWORD=your_secure_password
+
+# CORS Settings - Comma-separated list of allowed origins
+# Example: http://localhost:3000,http://localhost:8000,https://yourdomain.com
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+```
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DJANGO_DEBUG` | Enable debug mode (set to `False` in production) | `False` |
+| `DJANGO_SECRET_KEY` | Secret key for Django (change for each environment) | `your-secret-key-here` |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated list of allowed hosts | `localhost,127.0.0.1` |
+| `DATABASE_URL` | Database connection URL | `sqlite:///db.sqlite3` |
+| `DJANGO_ADMIN_USERNAME` | Admin user username | `admin` |
+| `DJANGO_ADMIN_EMAIL` | Admin user email | `admin@example.com` |
+| `DJANGO_ADMIN_PASSWORD` | Admin user password | `your_secure_password` |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins | `http://localhost:3000` |
+
+**Note:** The `.env` file is excluded from version control (see `.gitignore`). Each environment (development, staging, production) should have its own `.env` configuration.

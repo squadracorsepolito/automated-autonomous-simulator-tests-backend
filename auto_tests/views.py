@@ -43,7 +43,7 @@ class RosbagViewSet(ModelViewSet):
     def perform_destroy(self, instance):
         """
         Delete Rosbag instance and its folder safely.
-        Works even if some files are missing or aperti.
+        Works even if some files are missing or open.
         """
         folder = None
 
