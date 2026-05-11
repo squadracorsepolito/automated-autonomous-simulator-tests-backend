@@ -31,13 +31,11 @@ df = pd.read_sql_query(query, conn)
 print(df)
 conn.close()
 
-# Creare una figura con tutti i subplot in un'unica schermata
+# Create a figural dashboard with 4 subplots
 fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
 fig.suptitle("Data Dashboard", fontsize=20, fontweight='bold')
 
-# -----------------------------
-# Analisi Coni Rilevati per Colore
-# -----------------------------
+# Cone anlysis based on color
 cone_data = {
     'Yellow': df['number_of_evaluated_cones_yellow'].sum(),
     'Blue': df['number_of_evaluated_cones_blue'].sum(),
@@ -69,11 +67,11 @@ ax2.tick_params(axis='both', which='major', labelsize=11)
 ax2.grid(axis='y', linestyle='--', alpha=0.7)
 
 # -----------------------------
-# Correlazione Coni Totali vs Tempo Medio Giro
+# Correlation between Total Cones Detected and Average Lap Time
 # -----------------------------
 df['total_cones'] = df['number_of_evaluated_cones_yellow'] + df['number_of_evaluated_cones_blue'] + df['number_of_evaluated_cones_unknown']
 
-# Rimuovere eventuali valori NaN per il scatter plot
+# Remove nan values for the scatter plot
 clean_data = df.dropna(subset=['total_cones', 'avg_lap_time'])
 
 scatter = ax3.scatter(clean_data['total_cones'], clean_data['avg_lap_time'], 
@@ -85,7 +83,7 @@ ax3.set_ylabel("Average Lap Time (s)", fontsize=12)
 ax3.tick_params(axis='both', which='major', labelsize=11)
 ax3.grid(True, linestyle='--', alpha=0.7)
 
-# Aggiungere una linea di tendenza se ci sono abbastanza punti
+# Add a trend line to the scatter plot
 if len(clean_data) > 1:
     x_values = clean_data['total_cones'].values
     y_values = clean_data['avg_lap_time'].values
@@ -108,6 +106,6 @@ ax4.tick_params(axis='x', rotation=45, labelsize=11)
 ax4.tick_params(axis='y', labelsize=11)
 ax4.grid(axis='y', linestyle='--', alpha=0.7)
 
-# Regolare la spaziatura tra i subplot
+# Regular layout and show the dashboard
 plt.tight_layout()
 plt.show()

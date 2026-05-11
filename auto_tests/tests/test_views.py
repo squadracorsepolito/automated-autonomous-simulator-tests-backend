@@ -51,7 +51,6 @@ class RosbagViewSetTest(BaseRosbagTest):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
         self.assertFalse(Rosbags.objects.filter(id=self.rosbag.id).exists())
-        # self.assertFalse(self.folder_path.exists())
 
     def test_permission_denied_for_anon(self):
         """Anonymous user should get 401"""
@@ -77,6 +76,5 @@ class RosbagViewSetTest(BaseRosbagTest):
 
     def tearDown(self):
         """Remove test folder securely even on Windows"""
-         # Disattiva override e pulisci cartella temporanea
         self.override.disable()
         self.temp_media_dir.cleanup()

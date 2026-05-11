@@ -8,7 +8,7 @@ class RosbagDownloadTest(BaseRosbagTest):
     def setUp(self):
         self.client = Client(HTTP_AUTHORIZATION=f'Token {self.token.key}')
 
-        # Create a simple media folder for the test (keeps legacy behavior)
+        # Create a simple media folder for the test
         self.folder_path = Path("media/rosbags/test_67").resolve()
         self.folder_path.mkdir(parents=True, exist_ok=True)
 
@@ -32,7 +32,7 @@ class RosbagDownloadTest(BaseRosbagTest):
         self.assertIsNotNone(content_disposition)
         self.assertIn(self.rosbag_file_name, content_disposition)
 
-        # Save the received file locally (optional)
+        # Save the received file locally
         # Write the file in streaming
         downloaded_file = f'media/test/downloaded_{self.rosbag_file_name}'
         with open(downloaded_file, 'wb') as f:
@@ -55,7 +55,7 @@ class RosbagDownloadTest(BaseRosbagTest):
         self.assertIsNotNone(content_disposition)
         self.assertIn(self.json_file_name, content_disposition)
 
-        # Save the received file locally (optional)
+        # Save the received file locally
         # Write the file in streaming
         downloaded_file = f'media/test/downloaded_{self.json_file_name}'
         with open(downloaded_file, 'wb') as f:

@@ -1,0 +1,6 @@
+[project]
+name = "automated-tests-backend"
+version = "1.0.0"
+description = "Automated tests backend for driverless project"
+authors = [{name = "Alessio Cammarata", email = "alessiocammarata42@gmail.com"}]
+license = {text = "Apache-2.0"}

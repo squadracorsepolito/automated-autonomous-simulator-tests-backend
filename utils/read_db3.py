@@ -2,17 +2,17 @@ from pathlib import Path
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore, get_types_from_msg
 
-id_test = 69
+id_test = 67
 
-# Path al tuo rosbag
+# Path to the rosbag
 BASE_DIR = Path().resolve() 
 bag_path = BASE_DIR / f"media/rosbags/test_{id_test}"
 
 typestore = get_typestore(Stores.ROS2_FOXY)
 
-# Registrazione tipi custom (se serve)
+
 msg_path = BASE_DIR / "msg/"
-# Lista tipi custom da registrare
+# Custom message types to register
 custom_msgs = [
     "State",
     "ConeArray",
@@ -72,19 +72,18 @@ with Reader(bag_path) as reader:
             json_data["yaw"] = getattr(msg, "yaw", "")
             json_data["v_y"] = getattr(msg, "v_y", "")
             json_data["yaw_r"] = getattr(msg, "yaw_r", "")
-            # print(json_data)
         
         elif conn.topic == "/vehicle_state_measure":
             json_data["s"] = getattr(msg, "s", "")
             json_data["v_s"] = getattr(msg, "v_s", "")
             json_data["delta"] = getattr(msg, "delta", "")
-            json_data["throttle"] = getattr(msg, "d", "")  # attento al nome campo
+            json_data["throttle"] = getattr(msg, "d", "") 
 
         elif conn.topic == "/vehicle_cmd":
             json_data["speed"] = getattr(msg, "vs", "")
         
         elif conn.topic == "/state":
-            json_data["state"] = getattr(msg, "data", "")  # spesso std_msgs/msg/Int32 o simili
+            json_data["state"] = getattr(msg, "data", "")
         
         elif conn.topic == "/lap":
             json_data["lap"] = getattr(msg, "data", "")

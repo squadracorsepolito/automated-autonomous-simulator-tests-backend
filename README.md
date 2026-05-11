@@ -4,6 +4,8 @@
 
 This project is a Django-based backend for securely uploading and retrieving autonomous driving race results. It includes token-based authentication, file upload handling, and protected API endpoints.
 
+This repository is designed to integrate with the [`automated-autonomous-simulator-tests-backend`](https://github.com/squadracorsepolito/automated-autonomous-simulator-tests-backend) system for test result storage and processing and with the ['scd-web-interface'](https://github.com/squadracorsepolito/scd-web-interface) to view rosbag test results streamed later on the web.
+
 ## Features
 
 - **Token Authentication** with Django REST Framework
@@ -46,7 +48,6 @@ The API exposes the following endpoints for managing `Rosbag` instances:
 | `GET`  | `/api/rosbags/{pk}/ros/`    | Return the rosbag's ROS1 representation.                                    |
 
 ---
-
 These endpoints are automatically generated using **Django REST Framework’s** `DefaultRouter` in combination with a `ModelViewSet`. Here's how:
 
 - The backend defines a `RosbagViewSet` class that inherits from `ModelViewSet`, providing all standard CRUD operations:
@@ -165,3 +166,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000
 | `CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins | `http://localhost:3000` |
 
 **Note:** The `.env` file is excluded from version control (see `.gitignore`). Each environment (development, staging, production) should have its own `.env` configuration.
+
+---
+
+This project is licensed under the [**Apache License 2.0.**](https://opensource.org/license/Apache-2.0)

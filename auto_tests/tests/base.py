@@ -8,7 +8,7 @@ class BaseRosbagTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        # Utente di test
+        # Test user creation
         cls.user = User.objects.create_user(username='testuser', password='12345')
         cls.user.is_staff = True
         cls.user.save()
@@ -19,7 +19,7 @@ class BaseRosbagTest(TestCase):
         # COMMENT THIS LINE TO WORK ONLY WITH ROSBAG
         settings.JSON_FIELD_ENCODED = False
 
-        # Oggetto Rosbag
+        # Rosbag object with files
         cls.rosbag = Rosbags.objects.create(
             id=67,
             track_name="TestTrack",
@@ -31,4 +31,3 @@ class BaseRosbagTest(TestCase):
             yaml_file='rosbags/test_67/metadata.yaml',
         )
 
-    # Test fixture created; avoid noisy prints in test output

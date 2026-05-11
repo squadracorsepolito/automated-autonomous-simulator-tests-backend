@@ -1,11 +1,8 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, FileResponse
 from django.core.files.base import ContentFile
 from django.conf import settings
@@ -31,14 +28,6 @@ class RosbagViewSet(ModelViewSet):
     def get_queryset(self):
         clean_missing_files()
         return super().get_queryset()
-
-    # def perform_destroy(self, instance):
-    #     """Override default delete to also remove associated files"""
-    #     if instance.db_file or instance.rosbag_file or instance.yaml_file or instance.json_file:
-    #         folder = Path(instance.db_file.path).parent
-    #         if folder.exists():
-    #             shutil.rmtree(folder)
-    #     instance.delete()
 
     def perform_destroy(self, instance):
         """
@@ -91,9 +80,6 @@ class RosbagViewSet(ModelViewSet):
             # If JSON already saved in DB, return it
             if file_type == "json":
                 if instance.json_file and instance.json_file.storage.exists(instance.json_file.name):
-                    # with instance.json_file.open("r") as f:
-                    #     data = f.read()
-                    # return JsonResponse(json.loads(data), safe=False)
                     file_name = f"data_{pk}.json"
                     return FileResponse(open(Path(folder_path / file_name), 'rb'),as_attachment=True, filename=file_name)
             elif file_type == "ros":
@@ -129,7 +115,6 @@ class RosbagViewSet(ModelViewSet):
                 reader.test_typestore(pk)
                 instance.rosbag_file.save(file_name, ContentFile(data), save=True)
 
-            # return JsonResponse(compressed_data, safe=False)
             return FileResponse(open(Path(folder_path / file_name), 'rb'),as_attachment=True, filename=file_name)
 
         except Exception as e:

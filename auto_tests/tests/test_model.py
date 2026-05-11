@@ -36,12 +36,11 @@ class RosbagModelTest(TestCase):
         """Assign fake files to FileField without writing to real disk"""
         fake_rosbag = SimpleUploadedFile(f"fake_{self.rosbag.id}.bag", b"content")
         fake_json = SimpleUploadedFile(f"data_{self.rosbag.id}.json", b"{}")
-        # Use the FieldFile.save() helper to ensure the storage backend is used
         self.rosbag.rosbag_file.save(fake_rosbag.name, fake_rosbag, save=False)
         self.rosbag.json_file.save(fake_json.name, fake_json, save=False)
         self.rosbag.save()
 
-        # The stored name should include the uploaded filename (check basename)
+        # The stored name should include the uploaded filename
         import os
         basename = os.path.basename(str(self.rosbag.rosbag_file))
         stem, ext = os.path.splitext(basename)
